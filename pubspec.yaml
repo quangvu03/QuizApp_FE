@@ -11,13 +11,31 @@ dependencies:
     sdk: flutter
   shared_preferences: ^2.2.2
   cupertino_icons: ^1.0.8
+  flutter_native_splash: ^2.3.5
+  font_awesome_flutter: ^10.8.0
+  intl: ^0.17.0
+  http:
+
+flutter_native_splash:
+  color: "#ffffff"         # Màu nền splash
+  image: assets/flash_screen1.png   # Ảnh splash logo
+  android: true
+  ios: true
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo_quizz_app.png" # đường dẫn đến icon của bạn
+
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/home/

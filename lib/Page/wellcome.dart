@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quizapp_fe/Page/home.dart';
+import 'package:quizapp_fe/Page/account/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Wellcome extends StatefulWidget {
@@ -17,7 +17,7 @@ class _WellcomeState extends State<Wellcome> {
   @override
   void initState() {
     super.initState();
-    firstOpen = _isFirstTime(); // Gọi async hàm kiểm tra lần đầu
+    firstOpen = _isFirstTime();
   }
 
   Future<bool> _isFirstTime() async {
@@ -32,9 +32,32 @@ class _WellcomeState extends State<Wellcome> {
   void _goHomeScreen() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => HomeScreen()),
+      MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   }
+
+  Future<void> saveFirstTimeTrue() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('first_time', true);
+  }
+
+  final List<Map<String, String>> onboardingData = [
+    {
+      'title': 'Luyện thi mọi lúc',
+      'desc': 'Làm bài trắc nghiệm ngay trên điện thoại mọi lúc, mọi nơi.',
+      'image': 'assets/images/Wcimg1.png'
+    },
+    {
+      'title': 'Theo dõi tiến độ',
+      'desc': 'Xem lại kết quả, phân tích điểm mạnh/yếu của bạn.',
+      'image': 'assets/images/Wcimg2.png'
+    },
+    {
+      'title': 'Sẵn sàng cho kỳ thi',
+      'desc': 'Tự tin chinh phục kỳ thi với kiến thức vững chắc!',
+      'image': 'assets/images/Wcimg3.png'
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -42,18 +65,16 @@ class _WellcomeState extends State<Wellcome> {
       future: firstOpen,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator()); // Hiển thị loading khi đang chờ
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasData && snapshot.data == false) {
-          // Nếu không phải lần đầu, chuyển luôn tới HomeScreen
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _goHomeScreen();
           });
-          return Container(); // Không hiển thị gì trong khi đang chuyển hướng
+          return Container();
         }
 
-        // Nếu là lần đầu mở app, hiển thị Onboarding
         return Scaffold(
           body: Stack(
             children: [
@@ -89,41 +110,62 @@ class _WellcomeState extends State<Wellcome> {
                   );
                 },
               ),
+
+              // Dot + Arrow Navigation
               Positioned(
-                bottom: 60,
-                left: 0,
-                right: 0,
+                bottom: 20,
+                left: 20,
+                right: 20,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    onboardingData.length,
-                        (index) => Container(
-                      margin: EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentPage == index ? 20 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _currentPage == index ? Colors.blue : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(4),
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // ← Chỉ hiện ở trang 1
+                    _currentPage == 1
+                        ? IconButton(
+                      onPressed: () {
+                        _controller.previousPage(
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      icon: Icon(Icons.arrow_back_ios, color: Colors.grey),
+                    )
+                        : const SizedBox(width: 48),
+
+                    // Dot indicator ở giữa
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        onboardingData.length,
+                            (index) => Container(
+                          margin: EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentPage == index ? 20 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index ? Colors.blue : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+
+                    // → Chỉ hiện ở trang 0 và 1
+                    _currentPage < onboardingData.length - 1
+                        ? IconButton(
+                      onPressed: () {
+                        _controller.nextPage(
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      icon: Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                    )
+                        : const SizedBox(width: 48),
+                  ],
                 ),
               ),
-              Positioned(
-                top: 50,
-                right: 20,
-                child: TextButton(
-                  onPressed: () async {
-                    await saveFirstTimeTrue;  // Gọi hàm saveData() đúng cách
-                    _goHomeScreen;   // Gọi hàm _goHomeScreen() đúng cách
-                  },
-                  style: OutlinedButton.styleFrom(backgroundColor: Colors.blue),
-                  child: Text(
-                    "Bỏ qua",
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
-                ),
-              ),
+
+              // Nút "Bắt đầu" ở trang cuối
               if (_currentPage == onboardingData.length - 1)
                 Positioned(
                   bottom: 20,
@@ -131,8 +173,8 @@ class _WellcomeState extends State<Wellcome> {
                   right: 40,
                   child: TextButton(
                     onPressed: () async {
-                      await saveFirstTimeTrue();  // Gọi hàm saveData() đúng cách
-                      _goHomeScreen();   // Gọi hàm _goHomeScreen() đúng cách
+                      await saveFirstTimeTrue();
+                      _goHomeScreen();
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.blue,
@@ -141,7 +183,7 @@ class _WellcomeState extends State<Wellcome> {
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    child: Text("Bắt đầu", style: TextStyle(fontSize: 16)),
+                    child: Text("Bắt đầu", style: TextStyle(fontSize: 16, color: Colors.white)),
                   ),
                 ),
             ],
@@ -150,27 +192,4 @@ class _WellcomeState extends State<Wellcome> {
       },
     );
   }
-
-  Future<void> saveFirstTimeTrue() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('first_time', true);
-  }
-
-  final List<Map<String, String>> onboardingData = [
-    {
-      'title': 'Luyện thi mọi lúc',
-      'desc': 'Làm bài trắc nghiệm ngay trên điện thoại mọi lúc, mọi nơi.',
-      'image': 'assets/images/Wcimg1.png'
-    },
-    {
-      'title': 'Theo dõi tiến độ',
-      'desc': 'Xem lại kết quả, phân tích điểm mạnh/yếu của bạn.',
-      'image': 'assets/images/Wcimg2.png'
-    },
-    {
-      'title': 'Sẵn sàng cho kỳ thi',
-      'desc': 'Tự tin chinh phục kỳ thi với kiến thức vững chắc!',
-      'image': 'assets/images/Wcimg3.png'
-    },
-  ];
 }
