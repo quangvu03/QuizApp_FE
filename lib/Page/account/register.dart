@@ -277,7 +277,6 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _validateUsername(String value) async {
-    // Basic validation
     if (value.isEmpty) {
       setState(() => _usernameError = 'Vui lòng nhập tên đăng nhập');
       return;
@@ -386,7 +385,6 @@ class _RegisterPageState extends State<RegisterPage> {
         throw Exception('Gửi OTP thất bại');
       }
 
-      // Chuyển trang sau khi gửi OTP thành công
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

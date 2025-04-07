@@ -95,4 +95,22 @@ class AccountApi{
     }
   }
 
+  Future<String> ChangePassword(String email,String password) async {
+    try {
+      var response = await http.post(
+        Uri.parse("${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"),
+      );
+      print( Uri.parse("${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"));
+      if (response.statusCode == 200) {
+        dynamic res = jsonDecode(response.body);
+          return res["result"] ;
+      } else {
+        throw Exception("Bad request - Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("checklogin - Exception: $e");
+      rethrow;
+    }
+  }
+
 }

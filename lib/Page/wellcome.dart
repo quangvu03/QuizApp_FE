@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/account/login.dart';
-import 'package:quizapp_fe/Page/home.dart'; // Giả định bạn có HomeScreen
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Wellcome extends StatefulWidget {
@@ -43,10 +42,10 @@ class _WellcomeState extends State<Wellcome> {
   }
 
   void _goToHomeScreen() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
+    // Navigator.pushReplacement(
+    //   context,
+    //   MaterialPageRoute(builder: (context)  ,
+    // );
   }
 
   Future<void> _markFirstTimeCompleted() async {

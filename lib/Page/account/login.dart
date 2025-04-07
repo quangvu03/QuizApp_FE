@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:quizapp_fe/Page/account/forgot_password.dart';
 import 'package:quizapp_fe/Page/account/register.dart';
 import 'package:quizapp_fe/Page/wellcome.dart';
 import 'package:quizapp_fe/helpers/Toast_helper.dart';
@@ -88,7 +89,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       focusNode: _usernameFocusNode,
                       controller: username,
-
                     ),
                     const SizedBox(height: 15),
                     TextField(
@@ -132,7 +132,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             )),
                         TextButton(
                             onPressed: () {
-                              
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (context)
+                                => ForgotPasswordPage(),
+                              ));
                             },
                             child: const Text(
                               "Quên mật khẩu",
@@ -163,7 +166,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 30),
                     const Row(
                       children: [
-                        // Gạch bên trái
                         Expanded(
                           child: Divider(
                             thickness: 1,
@@ -238,16 +240,17 @@ class _LoginScreenState extends State<LoginScreen> {
         _passworderr!,
         duration: const Duration(seconds: 2),
       );
-    }
-    else {
+    } else {
       try {
-        final result = await account_api.Login(username.text.trim(), password.text.trim());
+        final result =
+            await account_api.Login(username.text.trim(), password.text.trim());
         if (result == true) {
           ToastHelper.showInfo("Đăng nhập thành công");
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setString('username', username.text.trim());
           await prefs.setBool('isLoggedIn', true); // Đánh dấu đã đăng nhập
-          Navigator.push(context, MaterialPageRoute(builder: (context) => Wellcome()));
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => Wellcome()));
         } else {
           ToastHelper.showError("Tài khoản hoặc mật khẩu không đúng.");
         }
