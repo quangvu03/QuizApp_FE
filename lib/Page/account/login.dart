@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:quizapp_fe/Page/account/register.dart';
+import 'package:quizapp_fe/Page/wellcome.dart';
+import 'package:quizapp_fe/helpers/Toast_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../model/account_api.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +16,17 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController username = TextEditingController();
+  final TextEditingController password = TextEditingController();
+
+  String? _usernamerr;
+  String? _passworderr;
+
+  final AccountApi account_api = AccountApi();
+
+  final FocusNode _usernameFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -59,7 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFF4F7FA),
-                        // mã màu #42A5F5
                         hintText: 'Username',
                         hintStyle: const TextStyle(
                           fontSize: 15,
@@ -71,6 +86,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      focusNode: _usernameFocusNode,
+                      controller: username,
+
                     ),
                     const SizedBox(height: 15),
                     TextField(
@@ -89,6 +107,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      focusNode: _passwordFocusNode,
+                      controller: password,
                     ),
                     const SizedBox(height: 15),
                     Row(
@@ -111,7 +131,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   TextStyle(fontSize: 15, color: Colors.blue),
                             )),
                         TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              
+                            },
                             child: const Text(
                               "Quên mật khẩu",
                               style:
@@ -124,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: _Login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF4F7FA),
                           foregroundColor: Colors.blueAccent,
@@ -201,5 +223,37 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _Login() async {
+    if (username.text.trim().length < 6) {
+      _usernamerr = "Vui lòng nhập đúng username hay email";
+      ToastHelper.showError(
+        _usernamerr!,
+        duration: const Duration(seconds: 2),
+      );
+    } else if (password.text.trim().length < 4) {
+      _passworderr = "Mật khẩu phải trên 4 kí tự";
+      ToastHelper.showError(
+        _passworderr!,
+        duration: const Duration(seconds: 2),
+      );
+    }
+    else {
+      try {
+        final result = await account_api.Login(username.text.trim(), password.text.trim());
+        if (result == true) {
+          ToastHelper.showInfo("Đăng nhập thành công");
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('username', username.text.trim());
+          await prefs.setBool('isLoggedIn', true); // Đánh dấu đã đăng nhập
+          Navigator.push(context, MaterialPageRoute(builder: (context) => Wellcome()));
+        } else {
+          ToastHelper.showError("Tài khoản hoặc mật khẩu không đúng.");
+        }
+      } catch (e) {
+        ToastHelper.showError("Có lỗi xảy ra: $e");
+      }
+    }
   }
 }

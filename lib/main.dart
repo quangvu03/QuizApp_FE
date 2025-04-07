@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:oktoast/oktoast.dart';
+import 'package:quizapp_fe/helpers/Toast_helper.dart';
 
 import 'Page/wellcome.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    const OKToast(
+      child: MyApp(),
+    ),
+  );
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 

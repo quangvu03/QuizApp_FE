@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/account/login.dart';
+import 'package:quizapp_fe/Page/home.dart'; // Giả định bạn có HomeScreen
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Wellcome extends StatefulWidget {
@@ -12,33 +13,45 @@ class Wellcome extends StatefulWidget {
 class _WellcomeState extends State<Wellcome> {
   final PageController _controller = PageController();
   int _currentPage = 0;
-  late Future<bool> firstOpen;
+  late Future<String> initialRoute;
 
   @override
   void initState() {
     super.initState();
-    firstOpen = _isFirstTime();
+    initialRoute = _determineInitialRoute();
   }
 
-  Future<bool> _isFirstTime() async {
+  Future<String> _determineInitialRoute() async {
     final prefs = await SharedPreferences.getInstance();
     bool isFirstTime = prefs.getBool('first_time') ?? true;
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
     if (isFirstTime) {
-      await prefs.setBool('first_time', false);
+      return 'welcome'; // Hiển thị onboarding
+    } else if (!isLoggedIn) {
+      return 'login'; // Chưa đăng nhập, về LoginScreen
+    } else {
+      return 'home'; // Đã đăng nhập, về HomeScreen
     }
-    return isFirstTime;
   }
 
-  void _goHomeScreen() {
+  void _goToLoginScreen() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
 
-  Future<void> saveFirstTimeTrue() async {
+  void _goToHomeScreen() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  }
+
+  Future<void> _markFirstTimeCompleted() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('first_time', true);
+    await prefs.setBool('first_time', false); // Đánh dấu không còn là lần đầu
   }
 
   final List<Map<String, String>> onboardingData = [
@@ -61,20 +74,30 @@ class _WellcomeState extends State<Wellcome> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: firstOpen,
+    return FutureBuilder<String>(
+      future: initialRoute,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
-        if (snapshot.hasData && snapshot.data == false) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _goHomeScreen();
-          });
-          return Container();
+        if (snapshot.hasData) {
+          if (snapshot.data == 'login') {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _goToLoginScreen();
+            });
+            return Container();
+          } else if (snapshot.data == 'home') {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _goToHomeScreen();
+            });
+            return Container();
+          }
         }
 
+        // Hiển thị Welcome (onboarding) nếu là first_time
         return Scaffold(
           body: Stack(
             children: [
@@ -119,26 +142,24 @@ class _WellcomeState extends State<Wellcome> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // ← Chỉ hiện ở trang 1
                     _currentPage == 1
                         ? IconButton(
                       onPressed: () {
                         _controller.previousPage(
-                          duration: Duration(milliseconds: 300),
+                          duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
                       },
-                      icon: Icon(Icons.arrow_back_ios, color: Colors.grey),
+                      icon: const Icon(Icons.arrow_back_ios, color: Colors.grey),
                     )
                         : const SizedBox(width: 48),
 
-                    // Dot indicator ở giữa
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
                         onboardingData.length,
                             (index) => Container(
-                          margin: EdgeInsets.symmetric(horizontal: 4),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
                           width: _currentPage == index ? 20 : 8,
                           height: 8,
                           decoration: BoxDecoration(
@@ -149,16 +170,15 @@ class _WellcomeState extends State<Wellcome> {
                       ),
                     ),
 
-                    // → Chỉ hiện ở trang 0 và 1
                     _currentPage < onboardingData.length - 1
                         ? IconButton(
                       onPressed: () {
                         _controller.nextPage(
-                          duration: Duration(milliseconds: 300),
+                          duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
                       },
-                      icon: Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                      icon: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
                     )
                         : const SizedBox(width: 48),
                   ],
@@ -173,17 +193,20 @@ class _WellcomeState extends State<Wellcome> {
                   right: 40,
                   child: TextButton(
                     onPressed: () async {
-                      await saveFirstTimeTrue();
-                      _goHomeScreen();
+                      await _markFirstTimeCompleted();
+                      _goToLoginScreen(); // Sau onboarding, đi đến LoginScreen
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.blue,
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    child: Text("Bắt đầu", style: TextStyle(fontSize: 16, color: Colors.white)),
+                    child: const Text(
+                      "Bắt đầu",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
                   ),
                 ),
             ],

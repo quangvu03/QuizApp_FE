@@ -2,29 +2,25 @@ import 'package:intl/intl.dart';
 
 class User{
   int? id;
-  String? username;
+  String? userName;
   String? password;
   String? fullName;
-  int? status;
-  String? securityCode;
+  bool? status;
   String? email;
-    DateTime? dob;
   String? phone;
   int? role;
-  User({this.id, this.username, this.password, this.fullName, this.status,
-    this.securityCode, this.email, this.phone, this.dob, this.role});
+  User({this.id, this.userName, this.password, this.fullName, this.status,
+     this.email, this.phone, this.role});
 
   Map<String, dynamic> toMap(){
     var dateFormat = DateFormat("dd/MM/yyyy");
     return <String, dynamic>{
-      "username": username,
+      "userName": userName,
       "password": password,
       "id": id,
       "email": email,
       "fullName": fullName,
       "status": status,
-      "securityCode": securityCode,
-      "created": dob != null ? dateFormat.format(dob!) : null,
       "phone": phone,
       "role" : role
     };
@@ -33,14 +29,17 @@ class User{
   User.fromMap(Map<String, dynamic> map) {
     var dateFormat = DateFormat("dd/MM/yyyy");
     id = map["id"];
-    username = map["username"] ?? '';
+    userName = map["userName"] ?? '';
     password = map["password"] ?? '';
     email = map["email"] ?? '';
     fullName = map["fullName"] ?? '';
-    status = map["status"] is bool ? (map["status"] ? 1 : 0) : map["status"] as int?;
-    securityCode = map["securityCode"] ?? '';
-    dob = map["created"] != null ? dateFormat.parse(map["created"]) : null;
+    status = map["status"] ?? 'false';
     phone = map["phone"] ?? '';
     role = map["role"];
+  }
+
+  @override
+  String toString() {
+    return 'User{id: $id, userName: $userName, password: $password, fullName: $fullName, status: $status, email: $email, phone: $phone, role: $role}';
   }
 }
