@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/account/forgot_password.dart';
 import 'package:quizapp_fe/Page/account/register.dart';
 import 'package:quizapp_fe/Page/wellcome.dart';
@@ -250,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('username', username.text.trim());
           await prefs.setBool('isLoggedIn', true); // Đánh dấu đã đăng nhập
           Navigator.push(
-              context, MaterialPageRoute(builder: (context) => Wellcome()));
+              context, MaterialPageRoute(builder: (context) => HomeScreen()));
         } else {
           ToastHelper.showError("Tài khoản hoặc mật khẩu không đúng.");
         }

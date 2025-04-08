@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/account/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,10 +43,10 @@ class _WellcomeState extends State<Wellcome> {
   }
 
   void _goToHomeScreen() {
-    // Navigator.pushReplacement(
-    //   context,
-    //   MaterialPageRoute(builder: (context)  ,
-    // );
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => HomeScreen(),)
+    );
   }
 
   Future<void> _markFirstTimeCompleted() async {
