@@ -5,6 +5,7 @@ import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/account/forgot_password.dart';
 import 'package:quizapp_fe/Page/account/register.dart';
 import 'package:quizapp_fe/Page/wellcome.dart';
+import 'package:quizapp_fe/entities/user.dart';
 import 'package:quizapp_fe/helpers/Toast_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -243,20 +244,21 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       try {
-        final result =
-            await account_api.Login(username.text.trim(), password.text.trim());
-        if (result == true) {
-          ToastHelper.showInfo("Đăng nhập thành công");
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString('username', username.text.trim());
-          await prefs.setBool('isLoggedIn', true); // Đánh dấu đã đăng nhập
-          Navigator.push(
-              context, MaterialPageRoute(builder: (context) => HomeScreen()));
-        } else {
-          ToastHelper.showError("Tài khoản hoặc mật khẩu không đúng.");
-        }
+        User user = await account_api.Login(username.text.trim(), password.text.trim());
+        ToastHelper.showInfo("Đăng nhập thành công");
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('username', user.userName!); // Lưu userName từ User
+        await prefs.setBool('isLoggedIn', true); // Đánh dấu đã đăng nhập
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
       } catch (e) {
-        ToastHelper.showError("Có lỗi xảy ra: $e");
+        if (e.toString().contains("Login failed")) {
+          ToastHelper.showError("Tài khoản hoặc mật khẩu không đúng.");
+        } else {
+          ToastHelper.showError("Có lỗi xảy ra: $e");
+        }
       }
     }
   }

@@ -293,10 +293,14 @@ class _RegisterPageState extends State<RegisterPage> {
     // Async check
     setState(() => _usernameError = 'Đang kiểm tra...');
     try {
-      final exists = await account_api.checkUsername(value);
-      setState(() => _usernameError = exists ? 'Username đã tồn tại' : null);
+      await account_api.checkUsername(value); // Không cần gán vào biến user nếu không sử dụng
+      setState(() => _usernameError = 'Username đã tồn tại');
     } catch (e) {
-      setState(() => _usernameError = 'Lỗi kiểm tra username');
+      if (e.toString().contains("Username not found")) {
+        setState(() => _usernameError = null); // Username không tồn tại, hợp lệ
+      } else {
+        setState(() => _usernameError = 'Lỗi kiểm tra username: $e');
+      }
     }
   }
 

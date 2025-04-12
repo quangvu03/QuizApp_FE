@@ -32,24 +32,28 @@ class AccountApi{
     }
   }
 
-  Future<bool> checkUsername(String username) async {
+  Future<User> checkUsername(String username) async {
     try {
       var response = await http.get(
         Uri.parse("${BaseUrl.url}/account/findByUsername?username=${username}"),
       );
-      // print("checkName response: ${response.body}");
+      dynamic res = jsonDecode(response.body);
+      if (!res.containsKey("result")) {
+        throw Exception("Invalid response: 'result' key not found");
+      }
       if (response.statusCode == 200) {
-        dynamic res = jsonDecode(response.body);
-        if (res["result"] == "not found") {
-          return false;
+        if (res["result"] is! Map<String, dynamic>) {
+          throw Exception("Invalid response: 'result' is not a valid user object");
         }
-        return true;
+        return User.fromMap(res["result"]);
+      } else if (response.statusCode == 400 && res["result"] == "not found") {
+        throw Exception("Username not found");
       } else {
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-      print("checkUsername - Exception: $e");
-      rethrow;
+    print("checkUsername - Exception: $e");
+    rethrow;
     }
   }
 
@@ -74,23 +78,28 @@ class AccountApi{
     }
   }
 
-  Future<bool> Login(String username,String password) async {
+  Future<User> Login(String username, String password) async {
     try {
       var response = await http.post(
         Uri.parse("${BaseUrl.url}/account/login?username=$username&password=$password"),
       );
-      print( Uri.parse("${BaseUrl.url}/login?username=$username&password=$password"));
+      print(Uri.parse("${BaseUrl.url}/account/login?username=$username&password=$password"));
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
-        if (res["result"] == "not found") {
-          return false;
+        // Nếu res chứa key "result" và giá trị là "not found", ném exception
+        if (res.containsKey("result") && res["result"] == "not found") {
+          throw Exception("Login failed: Invalid username or password");
         }
-        return true;
+        // Nếu không, res là dữ liệu người dùng trực tiếp
+        if (res is! Map<String, dynamic>) {
+          throw Exception("Invalid response: Expected a user object");
+        }
+        return User.fromMap(res);
       } else {
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-      print("checklogin - Exception: $e");
+      print("Login - Exception: $e");
       rethrow;
     }
   }
@@ -106,6 +115,27 @@ class AccountApi{
           return res["result"] ;
       } else {
         throw Exception("Bad request - Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("checklogin - Exception: $e");
+      rethrow;
+    }
+  }
+
+  Future<User> updateUser(int? id,User user) async {
+    try {
+      var response = await http.put(
+        Uri.parse("${BaseUrl.url}/account/updateAccount/$id"),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode(user.toMap()),
+    );
+      print(Uri.parse("${BaseUrl.url}/account/updateAccount/$id"));
+      if (response.statusCode == 200) {
+        dynamic res = jsonDecode(response.body);
+        return User.fromMap(res["result"]);
+      } else {
+        final errorRes = jsonDecode(response.body);
+        throw Exception(errorRes["result"] ?? "Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
       print("checklogin - Exception: $e");

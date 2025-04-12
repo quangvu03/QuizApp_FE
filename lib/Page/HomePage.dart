@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quizapp_fe/Page/account/profile.dart';
+import 'package:quizapp_fe/Page/infor.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -9,15 +9,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    if(index == 4){
-      Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilePage()));
-
+  void _onItemTapped(int index) async {
+    if (index == 4) {
+      setState(() {
+        _selectedIndex = 4;
+      });
+      print("index: $index");
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ProfilePage()),
+      );
+      setState(() {
+        _selectedIndex = 0; // Quay về "Trang chủ" nếu muốn
+      });
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+
+
+
 
   Widget _buildMenuItem(IconData icon, String label) {
     return Column(
