@@ -14,7 +14,6 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedIndex = 4;
       });
-      print("index: $index");
       print("select: $_selectedIndex");
       await Navigator.push(
         context,
@@ -109,10 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-
-
-
 
   Widget _buildMenuItem(IconData icon, String label) {
     return Column(

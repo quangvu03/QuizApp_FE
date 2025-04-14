@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/HomePage.dart';
+import 'package:quizapp_fe/Page/account/change_password.dart';
 import 'package:quizapp_fe/Page/account/login.dart';
 import 'package:quizapp_fe/Page/account/profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,7 +14,19 @@ class _ProfilePageState extends State<ProfilePage> {
   int _selectedIndex = 4  ;
   String name = "Noname";
 
-  void _onItemTapped(int index) {
+  Future<void> _onItemTapped(int index) async {
+    if(index == 0){
+      setState(() {
+        _selectedIndex = 0;
+      });
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => HomeScreen()),
+      );
+      setState(() {
+        _selectedIndex = 4;
+      });
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -154,7 +168,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: Icons.person_outline,
                       text: 'Chỉnh sửa thông tin',
                       onTap: () {
-                        print("object");
                         Navigator.push(context,
                             MaterialPageRoute(builder: (context) =>
                                 PersonalInfoScreen(),));
@@ -172,7 +185,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     _buildSettingsItem(
                       icon: Icons.lock_outline,
                       text: 'Thay đổi mật khẩu',
-                      onTap: () {},
+                      onTap: () {
+                        print("object");
+                        Navigator.push(context,
+                            MaterialPageRoute(builder: (context) =>
+                                ChangePasswordPage(),));
+                      },
                       iconColor: iconColor,
                       textColor: textColor,
                     ),
@@ -338,7 +356,7 @@ class _ProfilePageState extends State<ProfilePage> {
         height: 100,
         width: 100,
         child: Image.asset(
-          'assets/images/mascot_bottom.png',
+          'assets/images/home/imageHome2.png',
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => const Icon(
             Icons.image_not_supported,

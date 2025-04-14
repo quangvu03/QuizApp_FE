@@ -1,24 +1,20 @@
 import 'dart:convert';
 
+import 'package:bcrypt/bcrypt.dart';
 import 'package:quizapp_fe/entities/user.dart';
 import 'package:http/http.dart' as http;
 
 import '../helpers/Url.dart';
 
-
-class AccountApi{
-
-
-  Future<bool> create(User user) async{
-
-    try{
+class AccountApi {
+  Future<bool> create(User user) async {
+    try {
       var response = await http.post(
         Uri.parse("${BaseUrl.url}/account/create"),
         headers: {"Content-Type": "application/json"},
         body: json.encode(user.toMap()),
-
       );
-      print("usssseer: "+user.toString());
+      print("usssseer: " + user.toString());
       print(response.body);
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
@@ -43,7 +39,8 @@ class AccountApi{
       }
       if (response.statusCode == 200) {
         if (res["result"] is! Map<String, dynamic>) {
-          throw Exception("Invalid response: 'result' is not a valid user object");
+          throw Exception(
+              "Invalid response: 'result' is not a valid user object");
         }
         return User.fromMap(res["result"]);
       } else if (response.statusCode == 400 && res["result"] == "not found") {
@@ -52,15 +49,16 @@ class AccountApi{
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-    print("checkUsername - Exception: $e");
-    rethrow;
+      print("checkUsername - Exception: $e");
+      rethrow;
     }
   }
 
   Future<bool> checkEmail(String email) async {
     try {
       var response = await http.get(
-        Uri.parse("${BaseUrl.url}/account/findByEmail?email=${Uri.encodeComponent(email)}"),
+        Uri.parse(
+            "${BaseUrl.url}/account/findByEmail?email=${Uri.encodeComponent(email)}"),
       );
       // print("checkEmail response: ${response.body}");
       if (response.statusCode == 200) {
@@ -81,9 +79,11 @@ class AccountApi{
   Future<User> Login(String username, String password) async {
     try {
       var response = await http.post(
-        Uri.parse("${BaseUrl.url}/account/login?username=$username&password=$password"),
+        Uri.parse(
+            "${BaseUrl.url}/account/login?username=$username&password=$password"),
       );
-      print(Uri.parse("${BaseUrl.url}/account/login?username=$username&password=$password"));
+      print(Uri.parse(
+          "${BaseUrl.url}/account/login?username=$username&password=$password"));
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
         // Nếu res chứa key "result" và giá trị là "not found", ném exception
@@ -104,15 +104,17 @@ class AccountApi{
     }
   }
 
-  Future<String> ChangePassword(String email,String password) async {
+  Future<String> ChangePassword(String email, String password) async {
     try {
       var response = await http.post(
-        Uri.parse("${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"),
+        Uri.parse(
+            "${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"),
       );
-      print( Uri.parse("${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"));
+      print(Uri.parse(
+          "${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"));
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
-          return res["result"] ;
+        return res["result"];
       } else {
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
@@ -122,20 +124,21 @@ class AccountApi{
     }
   }
 
-  Future<User> updateUser(int? id,User user) async {
+  Future<User> updateUser(int? id, User user) async {
     try {
       var response = await http.put(
         Uri.parse("${BaseUrl.url}/account/updateAccount/$id"),
         headers: {"Content-Type": "application/json"},
         body: json.encode(user.toMap()),
-    );
+      );
       print(Uri.parse("${BaseUrl.url}/account/updateAccount/$id"));
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
         return User.fromMap(res["result"]);
       } else {
         final errorRes = jsonDecode(response.body);
-        throw Exception(errorRes["result"] ?? "Bad request - Status code: ${response.statusCode}");
+        throw Exception(errorRes["result"] ??
+            "Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
       print("checklogin - Exception: $e");
@@ -143,4 +146,38 @@ class AccountApi{
     }
   }
 
+  Future<String> newPassword(
+      String email, String password, String newPassword) async {
+    try {
+      final body = jsonEncode({
+        "password": BCrypt.hashpw(password, BCrypt.gensalt()),
+        "newPassword": BCrypt.hashpw(newPassword, BCrypt.gensalt()),
+      });
+      var response = await http.post(
+        Uri.parse("${BaseUrl.url}/account/newPassword?email=$email"),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: body,
+      );
+      print("${BaseUrl.url}/account/newPassword?email=$email");
+      print("Request Body: $body");
+
+      if (response.statusCode == 200) {
+        dynamic res = jsonDecode(response.body);
+        return res["result"];
+      } else {
+        try {
+          dynamic errorRes = jsonDecode(response.body);
+          String errorMessage = errorRes["result"] ?? "Yêu cầu không hợp lệ";
+          return errorMessage;
+        } catch (e) {
+          return "Yêu cầu không hợp lệ - Mã lỗi: ${response.statusCode}";
+        }
+      }
+    } catch (e) {
+      print("newPassword - Exception: $e");
+      return "Đã xảy ra lỗi: $e";
+    }
+  }
 }
