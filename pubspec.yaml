@@ -44,8 +44,5 @@ flutter:
   assets:
     - assets/images/
     - assets/images/home/
-  fonts:
-    - family: NotoSans
-      fonts:
-        - asset: fonts/NotoSans-Regular.ttf
+
 

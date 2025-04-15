@@ -81,8 +81,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     User updatedUser = User(
       fullName: FullnameController.text.trim(),
       phone: phoneController.text.trim(),
-      email: user?.email, // Giữ nguyên vì readOnly
-      userName: user?.userName, // Giữ nguyên vì readOnly
+      email: user?.email,
+      userName: user?.userName,
     );
 
     setState(() {
@@ -108,11 +108,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         await prefs.setString('username', result.userName!);
       }
 
-      // Hiển thị thông báo thành công
+
       ToastHelper.showSuccess("Cập nhật thông tin thành công");
     } catch (e) {
       print("updateAccount - Exception: $e");
-      // Dịch lỗi thành thông báo thân thiện
       String errorMessage = "Lỗi khi cập nhật thông tin";
       if (e.toString().contains("FullName")) {
         errorMessage = "Tên không được để trống";
