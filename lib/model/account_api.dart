@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bcrypt/bcrypt.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:quizapp_fe/entities/user.dart';
 import 'package:http/http.dart' as http;
 
@@ -178,6 +180,37 @@ class AccountApi {
     } catch (e) {
       print("newPassword - Exception: $e");
       return "Đã xảy ra lỗi: $e";
+    }
+  }
+
+
+  Future<Map<String, dynamic>> uploadAvatar(String username, File avatarFile) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${BaseUrl.url}/upload/uploadAvatar/$username'),
+      );
+      print("upload image: ${BaseUrl.url}/upload/uploadAvatar/$username");
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'avatar',
+          avatarFile.path,
+          contentType: MediaType('image', 'jpg'),
+        ),
+      );
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else if (response.statusCode == 400) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        return {'error': 'Server error: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'error': 'Failed to upload avatar: $e'};
     }
   }
 }

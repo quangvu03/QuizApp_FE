@@ -379,6 +379,7 @@ class _RegisterPageState extends State<RegisterPage> {
           email: _emailController.text,
           password: BCrypt.hashpw(_passwordController.text, BCrypt.gensalt()),
           phone: _phoneController.text,
+          avatar: "unknown.png",
           id: null,
           status: true);
 

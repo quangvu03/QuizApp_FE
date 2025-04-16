@@ -9,8 +9,10 @@ class User{
   String? email;
   String? phone;
   int? role;
+  String? avatar;
+
   User({this.id, this.userName, this.password, this.fullName, this.status,
-     this.email, this.phone, this.role});
+     this.email, this.phone, this.role, this.avatar});
 
   Map<String, dynamic> toMap(){
     var dateFormat = DateFormat("dd/MM/yyyy");
@@ -22,7 +24,8 @@ class User{
       "fullName": fullName,
       "status": status,
       "phone": phone,
-      "role" : role
+      "role" : role,
+      "avatar": avatar
     };
   }
 
@@ -36,6 +39,7 @@ class User{
     status = map["status"] ?? 'false';
     phone = map["phone"] ?? '';
     role = map["role"];
+    avatar = map["avatar"];
   }
 
   @override

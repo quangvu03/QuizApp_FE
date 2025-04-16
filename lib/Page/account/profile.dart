@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:quizapp_fe/entities/user.dart';
 import 'package:quizapp_fe/helpers/Toast_helper.dart';
+import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/account_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'dart:convert';
+import 'dart:io';
 
 class PersonalInfoScreen extends StatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -19,6 +26,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   TextEditingController usernameController = TextEditingController(text: "");
   User? user;
   bool isLoading = false;
+  String? _avatarUrl; // Lưu URL hoặc tên file ảnh từ SharedPreferences
 
   @override
   void dispose() {
@@ -33,6 +41,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   void initState() {
     super.initState();
     _loadUser();
+    _loadAvatar();
   }
 
   Future<void> _loadUser() async {
@@ -57,8 +66,94 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     }
   }
 
+  Future<void> _loadAvatar() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? avatarPath = prefs.getString('avatar_path');
+    if (avatarPath != null && avatarPath.isNotEmpty) {
+      setState(() {
+        _avatarUrl = avatarPath; // Lưu tên file hoặc URL
+      });
+    }
+  }
+
+  Future<void> _saveAvatar(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('avatar_path', path);
+  }
+
+  // Hàm chọn ảnh từ thư viện hoặc camera
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      if (source == ImageSource.camera) {
+        var status = await Permission.camera.status;
+        if (!status.isGranted) {
+          status = await Permission.camera.request();
+          if (!status.isGranted) {
+            ToastHelper.showError("Quyền truy cập máy ảnh bị từ chối");
+            return;
+          }
+        }
+      }
+
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+      if (pickedFile != null) {
+        File avatarFile = File(pickedFile.path);
+        // Upload ảnh lên server
+        if (user?.userName != null) {
+          final result = await accountApi.uploadAvatar(user!.userName!, avatarFile);
+          if (result.containsKey('avatarUrl')) {
+            setState(() {
+              _avatarUrl = result['avatarUrl']; // Cập nhật URL ảnh
+            });
+            await _saveAvatar(result['avatarUrl']); // Lưu vào SharedPreferences
+            ToastHelper.showSuccess("Cập nhật ảnh đại diện thành công");
+          } else {
+            ToastHelper.showError(result['error'] ?? "Lỗi khi tải ảnh lên");
+          }
+        } else {
+          ToastHelper.showError("Không tìm thấy tên người dùng");
+        }
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+      ToastHelper.showError("Không thể chọn ảnh: $e");
+    }
+  }
+
+  // Hàm hiển thị bottom sheet để chọn nguồn ảnh
+  void _showImageSourceSelection() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Chụp ảnh'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Chọn từ thư viện'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> updateAccount(int? id) async {
-    // Validation
     if (FullnameController.text.trim().length < 4) {
       ToastHelper.showError("Tên phải lớn hơn 4 ký tự");
       return;
@@ -77,7 +172,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       return;
     }
 
-    // Tạo User mới từ TextEditingController
     User updatedUser = User(
       fullName: FullnameController.text.trim(),
       phone: phoneController.text.trim(),
@@ -90,10 +184,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     });
 
     try {
-      // Gọi API để cập nhật
       User result = await accountApi.updateUser(id, updatedUser);
-
-      // Cập nhật user và UI
       setState(() {
         user = result;
         FullnameController.text = result.fullName ?? '';
@@ -102,12 +193,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         usernameController.text = result.userName ?? '';
       });
 
-      // Cập nhật SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       if (result.userName != null) {
         await prefs.setString('username', result.userName!);
       }
-
 
       ToastHelper.showSuccess("Cập nhật thông tin thành công");
     } catch (e) {
@@ -162,28 +251,36 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    child: Icon(
+                    backgroundImage: _avatarUrl != null
+                        ? NetworkImage('${BaseUrl.urlImage}$_avatarUrl')
+                        : null,
+                    child: _avatarUrl == null
+                        ? const Icon(
                       Icons.school,
                       size: 60,
                       color: Colors.blueAccent,
-                    ),
+                    )
+                        : null,
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        size: 20,
-                        color: Colors.grey,
+                    child: GestureDetector(
+                      onTap: _showImageSourceSelection,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 20,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   ),

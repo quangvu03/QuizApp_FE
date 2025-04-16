@@ -247,8 +247,10 @@ class _LoginScreenState extends State<LoginScreen> {
         User user = await account_api.Login(username.text.trim(), password.text.trim());
         ToastHelper.showInfo("Đăng nhập thành công");
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('username', user.userName!); // Lưu userName từ User
-        await prefs.setBool('isLoggedIn', true); // Đánh dấu đã đăng nhập
+        await prefs.setString('username', user.userName!);
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('avatar_path', user.avatar!);
+
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
