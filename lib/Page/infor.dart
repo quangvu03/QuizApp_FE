@@ -3,19 +3,29 @@ import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/account/change_password.dart';
 import 'package:quizapp_fe/Page/account/login.dart';
 import 'package:quizapp_fe/Page/account/profile.dart';
+import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int _selectedIndex = 4  ;
+  int _selectedIndex = 4;
   String name = "Noname";
+  String imageUrl = "unknown.png";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
 
   Future<void> _onItemTapped(int index) async {
-    if(index == 0){
+    if (index == 0) {
       setState(() {
         _selectedIndex = 0;
       });
@@ -26,33 +36,44 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _selectedIndex = 4;
       });
+    } else if (index == 2) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => PersonalInfoScreen()),
+      );
+      await _loadUsername(); // Tải lại dữ liệu sau khi quay lại từ PersonalInfoScreen
+      setState(() {
+        _selectedIndex = index;
+      });
+    } else if (index == 3) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ChangePasswordPage()),
+      );
+      setState(() {
+        _selectedIndex = index;
+      });
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
     }
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-
-  @override
-  void initState() {
-    super.initState(); // Luôn gọi super.initState() đầu tiên
-    _loadUsername(); // Gọi hàm bất đồng bộ để lấy username
   }
 
   Future<void> _loadUsername() async {
     final prefs = await SharedPreferences.getInstance();
     String? username = prefs.getString('username');
+    String? avatar = prefs.getString('avatar_path');
+    print('Loaded username: $username, avatar: $avatar'); // Debug
 
-    if (username != null) {
-      setState(() {
-        name = username;
-      });
-    }
+    setState(() {
+      name = username ?? "Noname";
+      imageUrl = avatar ?? "unknown.png";
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-
     const Color listBackgroundColor = Colors.white;
     const Color headingColor = Colors.black54;
     const Color iconColor = Colors.black54;
@@ -67,7 +88,6 @@ class _ProfilePageState extends State<ProfilePage> {
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 children: [
-                  // Ảnh nền
                   Container(
                     decoration: const BoxDecoration(
                       image: DecorationImage(
@@ -77,20 +97,41 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   Container(
-                    color: Colors.white.withOpacity(0.7), // chỉnh opacity tuỳ ý
+                    color: Colors.white.withOpacity(0.7),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 60.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 60.0),
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
                               radius: 30,
                               backgroundColor: Colors.white,
-                              child: Icon(Icons.school_outlined, size: 30, color: Colors.blueAccent),
+                              child: imageUrl != "unknown.png"
+                                  ? ClipOval(
+                                child: Image.network(
+                                  "${BaseUrl.urlImage}/$imageUrl",
+                                  fit: BoxFit.cover,
+                                  width: 60,
+                                  height: 60,
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                  const Icon(
+                                    Icons.school_outlined,
+                                    size: 30,
+                                    color: Colors.blueAccent,
+                                  ),
+                                ),
+                              )
+                                  : const Icon(
+                                Icons.school_outlined,
+                                size: 30,
+                                color: Colors.blueAccent,
+                              ),
                             ),
                             const SizedBox(width: 15),
                             Column(
@@ -130,7 +171,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
-
             ),
           ),
           SliverList(
@@ -167,10 +207,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     _buildSettingsItem(
                       icon: Icons.person_outline,
                       text: 'Chỉnh sửa thông tin',
-                      onTap: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (context) =>
-                                PersonalInfoScreen(),));
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PersonalInfoScreen(),
+                          ),
+                        );
+                        await _loadUsername(); // Tải lại dữ liệu sau khi quay lại
                       },
                       iconColor: iconColor,
                       textColor: textColor,
@@ -186,10 +230,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: Icons.lock_outline,
                       text: 'Thay đổi mật khẩu',
                       onTap: () {
-                        print("object");
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (context) =>
-                                ChangePasswordPage(),));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChangePasswordPage(),
+                          ),
+                        );
                       },
                       iconColor: iconColor,
                       textColor: textColor,
@@ -211,7 +257,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             },
                           ),
                           const SizedBox(width: 8),
-                          const Text('Tiếng Việt', style: TextStyle(color: Colors.black54)),
+                          const Text('Tiếng Việt',
+                              style: TextStyle(color: Colors.black54)),
                           const SizedBox(width: 8),
                           const Icon(Icons.chevron_right, color: Colors.grey),
                         ],
@@ -222,8 +269,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     _buildSettingsItem(
                       icon: Icons.offline_share,
-                      text: " Đăng xuất ",
-
+                      text: "Đăng xuất",
                       trailing: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -232,7 +278,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       ),
                       onTap: () async {
-                        print("click logout");
                         await showDialogLogout(context);
                       },
                       iconColor: iconColor,
@@ -244,7 +289,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 30),
               _buildContactUsSection(context),
-              const SizedBox(height: 20),
               const SizedBox(height: 20),
               const SizedBox(height: 80),
             ]),
@@ -282,28 +326,6 @@ class _ProfilePageState extends State<ProfilePage> {
         showUnselectedLabels: true,
         onTap: _onItemTapped,
       ),
-    );
-  }
-
-  Widget _buildMenuItem(IconData icon, String label) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.blue[100],
-          child: Icon(icon, size: 30, color: Colors.blue),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 12),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.clip,
-          ),
-        ),
-      ],
     );
   }
 
@@ -429,7 +451,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> showDialogLogout(BuildContext context) async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // Ngăn người dùng tap bên ngoài để đóng dialog
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Xác nhận đăng xuất'),
@@ -438,14 +460,14 @@ class _ProfilePageState extends State<ProfilePage> {
             TextButton(
               child: const Text('Không', style: TextStyle(color: Colors.grey)),
               onPressed: () {
-                Navigator.of(context).pop(); // Đóng dialog
+                Navigator.of(context).pop();
               },
             ),
             TextButton(
               child: const Text('Có', style: TextStyle(color: Colors.red)),
               onPressed: () async {
-                Navigator.of(context).pop(); // Đóng dialog trước
-                await _logout();      // Gọi hàm logout
+                Navigator.of(context).pop();
+                await _logout();
               },
             ),
           ],
@@ -454,13 +476,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-
-
   Future<void> _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('username'); // Xóa username
-    await prefs.remove('isLoggedIn'); // Xóa trạng thái đăng nhập
-    // Chuyển hướng về màn hình Login sau khi logout
+    await prefs.remove('username');
+    await prefs.remove('isLoggedIn');
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -468,4 +487,3 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
-

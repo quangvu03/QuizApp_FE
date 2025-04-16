@@ -7,8 +7,6 @@ import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/account_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'dart:convert';
 import 'dart:io';
 
 class PersonalInfoScreen extends StatefulWidget {
