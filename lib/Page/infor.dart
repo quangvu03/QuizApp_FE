@@ -41,7 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
         context,
         MaterialPageRoute(builder: (_) => PersonalInfoScreen()),
       );
-      await _loadUsername(); // Tải lại dữ liệu sau khi quay lại từ PersonalInfoScreen
+      await _loadUsername();
       setState(() {
         _selectedIndex = index;
       });

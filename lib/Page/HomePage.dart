@@ -1,5 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/home/Carousel.dart';
+import 'package:quizapp_fe/Page/home/Feeback.dart';
+import 'package:quizapp_fe/Page/home/achievementCarousel.dart';
+import 'package:quizapp_fe/Page/home/favoritetestCourse.dart';
+import 'package:quizapp_fe/Page/home/menuCarousel.dart';
+import 'package:quizapp_fe/Page/home/recentTestsCarousel.dart';
+import 'package:quizapp_fe/Page/home/collectionsCarousel.dart';
 import 'package:quizapp_fe/Page/infor.dart';
+import 'package:quizapp_fe/helpers/Url.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -8,6 +19,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  String name = "Noname";
+  String imageUrl = "unknown.png";
+  List<Map<String, dynamic>> achievements = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+    _fetchAchievements();
+  }
 
   void _onItemTapped(int index) async {
     if (index == 4) {
@@ -17,10 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
       print("select: $_selectedIndex");
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ProfilePage()),
+        MaterialPageRoute(builder: (_) => const ProfilePage()),
       );
       setState(() {
-        _selectedIndex = 0; // Quay về "Trang chủ" nếu muốn
+        _selectedIndex = 0;
       });
     } else {
       setState(() {
@@ -29,50 +51,192 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? username = prefs.getString('username');
+    String? avatar = prefs.getString('avatar_path');
+    print('Loaded username: $username, avatar: $avatar');
+
+    setState(() {
+      name = username ?? "Noname";
+      imageUrl = avatar ?? "unknown.png";
+    });
+  }
+
+  Future<void> _fetchAchievements() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final response = await http.get(Uri.parse('YOUR_API_ENDPOINT_HERE'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          achievements = data.map((item) {
+            return {
+              'title': item['title'] ?? 'Thành tựu không xác định',
+              'averageLabel': item['averageLabel'] ?? 'Điểm trung bình',
+              'averageScore': item['averageScore'].toString() ?? '0.0',
+              'totalScore': item['totalScore'].toString() ?? '0',
+              'icon': _mapIcon(item['icon'] ?? 'emoji_events'),
+              'iconColor': _mapColor(item['iconColor'] ?? 'yellow'),
+            };
+          }).toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load achievements');
+      }
+    } catch (e) {
+      print('Error fetching achievements: $e');
+      setState(() {
+        isLoading = false;
+        achievements = [
+          {
+            'title': 'Thành tựu trong tháng (Thử thách)',
+            'averageLabel': 'Điểm trung bình',
+            'averageScore': '0.10',
+            'totalScore': '39',
+            'icon': Icons.emoji_events,
+            'iconColor': Colors.yellow,
+          },
+          {
+            'title': 'Thành tựu tuần này',
+            'averageLabel': 'Điểm trung bình',
+            'averageScore': '8.50',
+            'totalScore': '15',
+            'icon': Icons.star,
+            'iconColor': Colors.orange,
+          },
+          {
+            'title': 'Thành tựu năm nay',
+            'averageLabel': 'Điểm trung bình',
+            'averageScore': '7.20',
+            'totalScore': '120',
+            'icon': Icons.school,
+            'iconColor': Colors.blue,
+          },
+        ];
+      });
+    }
+  }
+
+  IconData _mapIcon(String iconName) {
+    switch (iconName) {
+      case 'emoji_events':
+        return Icons.emoji_events;
+      case 'star':
+        return Icons.star;
+      case 'school':
+        return Icons.school;
+      default:
+        return Icons.emoji_events;
+    }
+  }
+
+  Color _mapColor(String colorName) {
+    switch (colorName) {
+      case 'yellow':
+        return Colors.yellow;
+      case 'orange':
+        return Colors.orange;
+      case 'blue':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              height: 200,
-              color: Colors.blue[100],
-              child: const Center(child: Text('Phần banner hoặc nội dung đầu')),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                _buildMenuItem(Icons.star, 'Bảng xếp hạng'),
-                _buildMenuItem(Icons.edit, 'Đề thi'),
-                _buildMenuItem(Icons.book, 'Ví sử dụng'),
-                _buildMenuItem(Icons.message, 'Kênh đề'),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: imageUrl != "unknown.png"
+                          ? ClipOval(
+                        child: Image.network(
+                          "${BaseUrl.urlImage}/$imageUrl",
+                          fit: BoxFit.cover,
+                          width: 60,
+                          height: 60,
+                          errorBuilder: (context, error, stackTrace) =>
+                          const Icon(
+                            Icons.school_outlined,
+                            size: 30,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
+                      )
+                          : const Icon(
+                        Icons.school_outlined,
+                        size: 30,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          "Học sinh/ sinh viên",
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.notifications_none),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : achievements.isEmpty
+                    ? const Center(child: Text('Không có dữ liệu thành tựu'))
+                    : AchievementCarousel(),
+                const SizedBox(height: 20),
+                const MenuCarousel(),
+                const SizedBox(height: 20),
+                const CourseCarousel(),
+                const SizedBox(height: 20),
+                const FavoriteTestsCarousel(),
+                const SizedBox(height: 20),
+                const RecentTestsCarousel(),
+                const SizedBox(height: 20),
+                const CollectionsCarousel(),
+                const SizedBox(height: 20),
+                const FeedbackCarousel(),
+                const SizedBox(height: 20),
+                Container(
+                  height: 300,
+                  color: Colors.pink[100],
+                  child: const Center(child: Text('Nội dung khác')),
+                ),
+                Container(
+                  height: 300,
+                  color: Colors.green[100],
+                  child: const Center(child: Text('Nội dung khác')),
+                ),
               ],
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildMenuItem(Icons.class_, 'Lớp học tập'),
-                _buildMenuItem(Icons.school, 'Phòng thi'),
-                _buildMenuItem(Icons.abc, 'Kết quả của tói'),
-                _buildMenuItem(Icons.download, 'Đề thi tải xuổng'),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Container(
-              height: 300,
-              color: Colors.pink[100],
-              child: const Center(child: Text('Nội dung khác')),
-            ),
-            Container(
-              height: 300,
-              color: Colors.green[100],
-              child: const Center(child: Text('Nội dung khác')),
-            ),
-          ],
+          ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -106,28 +270,6 @@ class _HomeScreenState extends State<HomeScreen> {
         showUnselectedLabels: true,
         onTap: _onItemTapped,
       ),
-    );
-  }
-
-  Widget _buildMenuItem(IconData icon, String label) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.blue[100],
-          child: Icon(icon, size: 30, color: Colors.blue),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: 80, // Giới hạn chiều rộng
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 12),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.clip, // Tránh ellipsis
-          ),
-        ),
-      ],
     );
   }
 }
