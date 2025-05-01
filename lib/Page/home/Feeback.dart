@@ -25,14 +25,14 @@ class _FeedbackCarouselState extends State<FeedbackCarousel> {
         'role': 'Thí sinh tự do',
         'content':
         'Ca nhân thay app rất phù hợp với những thí sinh tự do như mình. Có thể tự lên kế hoạch ôn tập, tự chọn môn học, tự làm đề, nói chung là chủ động hoàn toàn...',
-        'image': 'assets/images/user1.png', // Thay bằng đường dẫn hình ảnh thực tế
+        'image': 'assets/images/home/bgr1.jpg',
       },
       {
         'name': 'Nguyễn Thị Hồng',
         'role': 'Học sinh lớp 12',
         'content':
         'App giúp mình cải thiện kỹ năng làm bài rất nhiều. Các đề thi sát với thực tế và có giải thích chi tiết.',
-        'image': 'assets/images/user2.png', // Thay bằng đường dẫn hình ảnh thực tế
+        'image': 'assets/images/home/bgr1.jpg',
       },
     ];
 

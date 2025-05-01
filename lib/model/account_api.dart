@@ -16,7 +16,6 @@ class AccountApi {
         headers: {"Content-Type": "application/json"},
         body: json.encode(user.toMap()),
       );
-      print("usssseer: " + user.toString());
       print(response.body);
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);

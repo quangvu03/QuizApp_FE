@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/discoverCourse.dart';
 
 class MenuCarousel extends StatefulWidget {
   const MenuCarousel({Key? key}) : super(key: key);
@@ -22,7 +23,6 @@ class _MenuCarouselState extends State<MenuCarousel> {
         {'icon': Icons.school, 'label': 'Phòng thi'},
         {'icon': Icons.abc, 'label': 'Kết quả của tói'},
       ],
-      // Trang 2
       [
         {'icon': Icons.message, 'label': 'Kênh đề'},
         {'icon': Icons.download, 'label': 'Đề thi tải xuổng'},
@@ -32,7 +32,7 @@ class _MenuCarouselState extends State<MenuCarousel> {
     return Column(
       children: [
         SizedBox(
-          height: 300, // Tăng chiều cao để chứa 2 hàng và tiêu đề đầy đủ
+          height: 300,
           child: PageView.builder(
             itemCount: menuPages.length,
             onPageChanged: (index) {
@@ -44,11 +44,11 @@ class _MenuCarouselState extends State<MenuCarousel> {
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: GridView.count(
-                  crossAxisCount: 3, // 3 cột
-                  childAspectRatio: 0.65, // Giảm tỷ lệ để tăng chiều cao của mỗi item
-                  mainAxisSpacing: 15.0, // Khoảng cách giữa các hàng
-                  crossAxisSpacing: 15.0, // Khoảng cách giữa các cột
-                  physics: const NeverScrollableScrollPhysics(), // Tắt cuộn của GridView
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.65,
+                  mainAxisSpacing: 15.0,
+                  crossAxisSpacing: 15.0,
+                  physics: const NeverScrollableScrollPhysics(),
                   children: menuPages[index].map((menuItem) {
                     return _buildMenuItem(
                       menuItem['icon'],
@@ -61,7 +61,6 @@ class _MenuCarouselState extends State<MenuCarousel> {
           ),
         ),
         const SizedBox(height: 8),
-        // Dots indicator
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
@@ -82,26 +81,37 @@ class _MenuCarouselState extends State<MenuCarousel> {
   }
 
   Widget _buildMenuItem(IconData icon, String label) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.blue[100],
-          child: Icon(icon, size: 30, color: Colors.blue),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 12),
-            textAlign: TextAlign.center,
-            maxLines: 2, // Cho phép xuống dòng nếu tiêu đề dài
-            overflow: TextOverflow.ellipsis, // Hiển thị dấu chấm lửng nếu văn bản quá dài
+    return InkWell(
+      onTap: () {
+        if (label == 'Đề thi') {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const DiscoverCourse(),));
+        } else if (label == 'Phòng thi') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bạn đã nhấn vào Phòng thi!')),
+          );
+        }
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.blue[100],
+            child: Icon(icon, size: 30, color: Colors.blue),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 12),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

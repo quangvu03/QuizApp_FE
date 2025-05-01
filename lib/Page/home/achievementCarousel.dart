@@ -10,7 +10,6 @@ class AchievementCarousel extends StatefulWidget {
 
 class _AchievementCarouselState extends State<AchievementCarousel> {
   int _currentPage = 0;
-  // Khởi tạo trực tiếp thay vì dùng late
   PageController _pageController = PageController(initialPage: 0);
   late Timer _timer;
 
@@ -18,12 +17,11 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
   void initState() {
     super.initState();
 
-    // Tự động chuyển trang sau mỗi 3 giây
     _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-      if (_currentPage < 2) { // Số lượng trang - 1 (vì index bắt đầu từ 0)
+      if (_currentPage < 2) {
         _currentPage++;
       } else {
-        _currentPage = 0; // Quay lại trang đầu nếu đến trang cuối
+        _currentPage = 0;
       }
       _pageController.animateToPage(
         _currentPage,
@@ -35,7 +33,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
 
   @override
   void dispose() {
-    _timer.cancel(); // Hủy timer khi widget bị dispose
+    _timer.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -50,6 +48,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
         'totalScore': '39',
         'icon': Icons.emoji_events,
         'iconColor': Colors.yellow,
+        'backgroundImage': 'assets/images/home/bgr1.jpg',
       },
       {
         'title': 'Thành tựu tuần này',
@@ -58,6 +57,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
         'totalScore': '15',
         'icon': Icons.star,
         'iconColor': Colors.orange,
+        'backgroundImage': 'assets/images/home/bgr1.jpg',
       },
       {
         'title': 'Thành tựu năm nay',
@@ -66,6 +66,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
         'totalScore': '120',
         'icon': Icons.school,
         'iconColor': Colors.blue,
+        'backgroundImage': 'assets/images/home/bgr1.jpg',
       },
     ];
 
@@ -74,11 +75,11 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
         SizedBox(
           height: 150,
           child: PageView.builder(
-            controller: _pageController, // Sử dụng PageController
+            controller: _pageController,
             itemCount: achievements.length,
             onPageChanged: (index) {
               setState(() {
-                _currentPage = index; // Cập nhật trang hiện tại
+                _currentPage = index;
               });
             },
             itemBuilder: (context, index) {
@@ -92,6 +93,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                   totalScore: achievements[index]['totalScore'],
                   icon: achievements[index]['icon'],
                   iconColor: achievements[index]['iconColor'],
+                  backgroundImage: achievements[index]['backgroundImage'],
                 ),
               );
             },
@@ -118,7 +120,6 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
     );
   }
 
-  // Widget để hiển thị từng ô thành tựu
   Widget _buildAchievementSection({
     required String title,
     required String averageLabel,
@@ -126,11 +127,11 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
     required String totalScore,
     required IconData icon,
     required Color iconColor,
+    required String backgroundImage,
   }) {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -140,6 +141,14 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
             offset: const Offset(0, 3),
           ),
         ],
+        image: DecorationImage(
+          image: AssetImage(backgroundImage),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withOpacity(0.2),
+            BlendMode.dstATop,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +160,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: Colors.white, // Đổi màu chữ để dễ đọc trên nền ảnh
                 ),
               ),
               const Spacer(),
@@ -171,7 +180,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                 children: [
                   Text(
                     averageLabel,
-                    style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                    style: TextStyle(color: Colors.grey[300], fontSize: 12),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -179,7 +188,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors.white, // Đổi màu chữ
                     ),
                   ),
                 ],
@@ -198,7 +207,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors.white, // Đổi màu chữ
                     ),
                   ),
                 ],

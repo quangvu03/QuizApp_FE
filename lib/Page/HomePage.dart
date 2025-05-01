@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/discoverCourse.dart';
 import 'package:quizapp_fe/Page/home/Carousel.dart';
 import 'package:quizapp_fe/Page/home/Feeback.dart';
 import 'package:quizapp_fe/Page/home/achievementCarousel.dart';
@@ -13,6 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -40,6 +43,18 @@ class _HomeScreenState extends State<HomeScreen> {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const ProfilePage()),
+      );
+      setState(() {
+        _selectedIndex = 0;
+      });
+    } else if (index == 2) {
+      setState(() {
+        _selectedIndex = 2;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DiscoverCourse()),
       );
       setState(() {
         _selectedIndex = 0;
@@ -151,90 +166,139 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.white,
-                      child: imageUrl != "unknown.png"
-                          ? ClipOval(
-                        child: Image.network(
-                          "${BaseUrl.urlImage}/$imageUrl",
-                          fit: BoxFit.cover,
-                          width: 60,
-                          height: 60,
-                          errorBuilder: (context, error, stackTrace) =>
-                          const Icon(
-                            Icons.school_outlined,
-                            size: 30,
-                            color: Colors.blueAccent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.blueAccent,
+              Colors.purpleAccent,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white,
+                        child: imageUrl != "unknown.png"
+                            ? ClipOval(
+                          child: Image.network(
+                            "${BaseUrl.urlImage}/$imageUrl",
+                            fit: BoxFit.cover,
+                            width: 60,
+                            height: 60,
+                            errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.school_outlined,
+                              size: 30,
+                              color: Colors.blueAccent,
+                            ),
                           ),
+                        )
+                            : const Icon(
+                          Icons.school_outlined,
+                          size: 30,
+                          color: Colors.blueAccent,
                         ),
-                      )
-                          : const Icon(
-                        Icons.school_outlined,
-                        size: 30,
-                        color: Colors.blueAccent,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                        Text(
-                          "Học sinh/ sinh viên",
-                          style: TextStyle(color: Colors.grey[700]),
+                          const Text(
+                            "Học sinh/ sinh viên",
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.notifications_none, color: Colors.white),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : achievements.isEmpty
+                      ? const Center(
+                    child: Text(
+                      'Không có dữ liệu thành tựu',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  )
+                      : const AchievementCarousel(),
+                  const SizedBox(height: 20),
+                  const MenuCarousel(),
+                  const SizedBox(height: 20),
+                  const CourseCarousel(),
+                  const SizedBox(height: 20),
+                  const FavoriteTestsCarousel(),
+                  const SizedBox(height: 20),
+                  const RecentTestsCarousel(),
+                  const SizedBox(height: 20),
+                  const CollectionsCarousel(),
+                  const SizedBox(height: 20),
+                  const FeedbackCarousel(),
+                  const SizedBox(height: 20),
+                  // Tùy chỉnh Container với shadow và bo góc
+                  Container(
+                    height: 300,
+                    decoration: BoxDecoration(
+                      color: Colors.pink[100]?.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    const Icon(Icons.notifications_none),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : achievements.isEmpty
-                    ? const Center(child: Text('Không có dữ liệu thành tựu'))
-                    : AchievementCarousel(),
-                const SizedBox(height: 20),
-                const MenuCarousel(),
-                const SizedBox(height: 20),
-                const CourseCarousel(),
-                const SizedBox(height: 20),
-                const FavoriteTestsCarousel(),
-                const SizedBox(height: 20),
-                const RecentTestsCarousel(),
-                const SizedBox(height: 20),
-                const CollectionsCarousel(),
-                const SizedBox(height: 20),
-                const FeedbackCarousel(),
-                const SizedBox(height: 20),
-                Container(
-                  height: 300,
-                  color: Colors.pink[100],
-                  child: const Center(child: Text('Nội dung khác')),
-                ),
-                Container(
-                  height: 300,
-                  color: Colors.green[100],
-                  child: const Center(child: Text('Nội dung khác')),
-                ),
-              ],
+                    child: const Center(
+                      child: Text(
+                        'Nội dung khác',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    height: 300,
+                    decoration: BoxDecoration(
+                      color: Colors.green[100]?.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Nội dung khác',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -269,6 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
         showSelectedLabels: true,
         showUnselectedLabels: true,
         onTap: _onItemTapped,
+        backgroundColor: Colors.white.withOpacity(0.9), // Nền mờ cho bottom bar
       ),
     );
   }

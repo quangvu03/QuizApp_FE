@@ -27,7 +27,7 @@ class _CourseCarouselState extends State<CourseCarousel> {
           'Luyện đề chuyên sâu, chinh phục mọi dạng bài',
           'Hệ thống giáo dục chuẩn quốc tế',
         ],
-        'image': 'assets/images/course_teacher.png', // Thay bằng đường dẫn hình ảnh thực tế
+        'image': 'assets/images/home/bgr1.jpg', // Thay bằng đường dẫn hình ảnh thực tế
         'type': 'Đề đầu vào',
         'platform': 'Apollo',
       },
@@ -38,7 +38,7 @@ class _CourseCarouselState extends State<CourseCarousel> {
           'Lộ trình cá nhân hóa',
           'Cam kết đầu ra 7.0+',
         ],
-        'image': 'assets/images/course_student.png', // Thay bằng đường dẫn hình ảnh thực tế
+        'image': 'assets/images/home/bgr1.jpg', // Thay bằng đường dẫn hình ảnh thực tế
         'type': 'Đề đầu ra',
         'platform': 'Apollo',
       },
