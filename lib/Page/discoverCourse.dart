@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/HomePage.dart';
+import 'package:quizapp_fe/Page/details/details.dart';
 import 'package:quizapp_fe/Page/infor.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
@@ -19,6 +20,9 @@ class _DiscoverCourseState extends State<DiscoverCourse> {
   late QuizApiService quizApiService;
   bool isLoading = true;
   String errorMessage = '';
+  String searchText = "";
+  final TextEditingController _deThiController = TextEditingController();
+  final TextEditingController _nguoiTaoController = TextEditingController();
 
   @override
   void initState() {
@@ -96,19 +100,50 @@ class _DiscoverCourseState extends State<DiscoverCourse> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: _selectedCard == "Đề thi" ? "Tìm kiếm đề thi..." : "Tìm kiếm kênh đề thi...", // Thay đổi hintText động
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
+                child: Column(
+                  children: [
+                    // Ô tìm kiếm Đề thi
+                    Visibility(
+                      visible: _selectedCard == "Đề thi",
+                      child: TextField(
+                        controller: _deThiController,
+                        onChanged: (value) => search(value, "Đề thi"),
+                        decoration: InputDecoration(
+                          hintText: "Tìm kiếm đề thi...",
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+
+                    // Ô tìm kiếm Người tạo
+                    Visibility(
+                      visible: _selectedCard != "Đề thi",
+                      child: TextField(
+                        controller: _nguoiTaoController,
+                        onChanged: (value) => search(value, "Người tạo"),
+                        decoration: InputDecoration(
+                          hintText: "Tìm kiếm kênh đề thi...",
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+
+
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -180,88 +215,98 @@ class _DiscoverCourseState extends State<DiscoverCourse> {
                     : _selectedCard == "Đề thi"
                     ? dsde.isEmpty
                     ? const Center(
-                    child: Text('No quizzes found', style: TextStyle(color: Colors.white)))
-                    : ListView.builder(
+                    child: Text(' Không tìm thấy để', style: TextStyle(color: Colors.white)))
+                    :
+                ListView.builder(
                   padding: const EdgeInsets.all(16.0),
                   itemCount: dsde.length,
                   itemBuilder: (context, index) {
                     final test = dsde[index];
-                    return Card(
-                      shape:
-                      RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 5,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: test['image'] != null && test['image'].isNotEmpty
-                                  ? Image.network(
-                                test['image'],
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Image.asset(
-                                      'assets/images/quiz/title.png',
-                                      width: 60,
-                                      height: 60,
-                                      fit: BoxFit.cover,
-                                    ),
-                              )
-                                  : Image.asset(
-                                'assets/images/quiz/title.png',
-                                width: 200,
-                                height: 200,
-                                fit: BoxFit.cover,
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QuizDetailPage( idquiz: test['id']),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 5,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: test['image'] != null && test['image'].isNotEmpty
+                                    ? Image.network(
+                                  "${BaseUrl.urlImage}${test['image']}",
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Image.asset(
+                                        'assets/images/quiz/title.png',
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                      ),
+                                )
+                                    : Image.asset(
+                                  'assets/images/quiz/title.png',
+                                  width: 200,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    test['title'] ?? 'No title',
-                                    style: const TextStyle(
-                                        fontSize: 18, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    "${test['numberquiz'] ?? 0} câu",
-                                    style: const TextStyle(color: Colors.grey),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.blue, // Màu viền
-                                            width: 2.0, // Độ dày viền
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      test['title'] ?? 'No title',
+                                      style: const TextStyle(
+                                          fontSize: 18, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      "${test['numberquiz'] ?? 0} câu",
+                                      style: const TextStyle(color: Colors.grey),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.blue,
+                                              width: 2.0,
+                                            ),
+                                          ),
+                                          child: CircleAvatar(
+                                            radius: 12,
+                                            backgroundImage: NetworkImage("${BaseUrl.urlImage}${test['imageUser']}"),
+                                            backgroundColor: Colors.grey[200],
                                           ),
                                         ),
-                                        child: CircleAvatar(
-                                          radius: 12,
-                                          backgroundImage: NetworkImage("${BaseUrl.urlImage}${test['imageUser']}"),
-                                          backgroundColor: Colors.grey[200],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          test['userName'] ?? 'Unknown',
+                                          style: const TextStyle(fontSize: 12),
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        test['userName'] ?? 'Unknown',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const Icon(Icons.arrow_forward_ios, size: 16),
-                          ],
+                              const Icon(Icons.arrow_forward_ios, size: 16),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -269,7 +314,7 @@ class _DiscoverCourseState extends State<DiscoverCourse> {
                 )
                     : dsnguoitao.isEmpty
                     ? const Center(
-                    child: Text('No channels found', style: TextStyle(color: Colors.white)))
+                    child: Text('Không tìm thấy đề ', style: TextStyle(color: Colors.white)))
                     : ListView.builder(
                   padding: const EdgeInsets.all(16.0),
                   itemCount: dsnguoitao.length,
@@ -372,4 +417,21 @@ class _DiscoverCourseState extends State<DiscoverCourse> {
       ),
     );
   }
+
+  void search(String value, String selectedCard) async {
+    QuizApiService quizApiService = QuizApiService();
+
+    if (selectedCard == "Đề thi") {
+      final data = await quizApiService.findQuizByname(value);
+      setState(() {
+        dsde = data;
+      });
+    } else {
+      final data = await quizApiService.findByUserName(value);
+      setState(() {
+        dsnguoitao = data;
+      });
+    }
+  }
+
 }

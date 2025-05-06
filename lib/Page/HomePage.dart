@@ -47,9 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedIndex = 0;
       });
-    } else if (index == 2) {
+    } else if (index == 1) {
       setState(() {
-        _selectedIndex = 2;
+        _selectedIndex = 1;
       });
       print("select: $_selectedIndex");
       await Navigator.push(
