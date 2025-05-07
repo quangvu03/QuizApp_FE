@@ -108,8 +108,7 @@ class QuizApiService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data =
-        jsonDecode(utf8.decode(response.bodyBytes));
-
+            jsonDecode(utf8.decode(response.bodyBytes));
 
         final result = data['result'];
         final message = data['message'];
@@ -138,10 +137,9 @@ class QuizApiService {
           'Accept': 'application/json; charset=UTF-8',
         },
       );
-
       if (response.statusCode == 200) {
         final Map<String, dynamic> data =
-        jsonDecode(utf8.decode(response.bodyBytes));
+            jsonDecode(utf8.decode(response.bodyBytes));
         final result = data['result'];
 
         if (result is List) {
@@ -159,4 +157,30 @@ class QuizApiService {
       throw Exception('Error fetching quizzes: $e');
     }
   }
+
+  Future<Map<String, dynamic>> getExam(int idQuiz) async {
+    try {
+      final response = await http.get(
+        Uri.parse("${BaseUrl.url}/question/getExam/${idQuiz}"),
+        headers: {
+          'Accept': 'application/json; charset=UTF-8',
+        },
+      );
+      print("url + + + ${BaseUrl.url}/quiz/question/getExam/${idQuiz}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data =
+            jsonDecode(utf8.decode(response.bodyBytes));
+        return data;
+      } else {
+        final Map<String, dynamic> data =
+        jsonDecode(utf8.decode(response.bodyBytes));
+        return data;
+      }
+    } catch (e) {
+      throw Exception('Error fetching quizzes: $e');
+
+    }
+  }
 }
+

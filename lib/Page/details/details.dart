@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/details/ExamSettingDialog.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
 
@@ -181,7 +182,23 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             children: [
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return Dialog(
+                                          insetPadding: EdgeInsets.zero, // Toàn màn hình
+                                          backgroundColor: Colors.transparent,
+                                          child: ExamSettingsDialog(
+                                            idquiz: widget.idquiz,
+                                            onClose: () {
+                                              Navigator.pop(context);
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
                                   icon: const Icon(Icons.check_circle_outline),
                                   label: const Text('Bắt đầu'),
                                   style: ElevatedButton.styleFrom(
