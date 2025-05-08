@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:quizapp_fe/Page/exam/QuestionSelectionDialog.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
 
 class ExamQuestionScreen extends StatefulWidget {
@@ -76,7 +77,6 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           _hasAnswered = false;
         }
 
-        print("Answers: $answers");
         print("Answer History: $_answerHistory");
       });
     } catch (e) {
@@ -145,15 +145,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                         children: [
                           Icon(Icons.timer_outlined, size: 18, color: Colors.black54),
                           SizedBox(width: 4),
-                          Text(
-                            '00 : 10 : 09',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
+git                         ],
                       ),
                     ),
                     IconButton(
@@ -339,12 +331,29 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                         children: [
                           const Icon(Icons.menu_book_outlined, size: 18, color: Colors.white),
                           const SizedBox(width: 4),
-                          Text(
-                            '$_number/$totalQuestion câu',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          GestureDetector(
+                            onTap: () async {
+                              final selectedQuestion = await showQuestionSelectionDialog(
+                                context,
+                                totalQuestion,
+                                _number,
+                                _answerHistory,
+                                examQuizList,
+                              );
+                              if (selectedQuestion != null) {
+                                setState(() {
+                                  _number = selectedQuestion;
+                                  fetchAPIexam(widget.idquizd);
+                                });
+                              }
+                            },
+                            child: Text(
+                              '$_number/$totalQuestion câu',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ],
@@ -384,6 +393,26 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<int?> showQuestionSelectionDialog(
+      BuildContext context,
+      int? totalQuestion,
+      int? number,
+      Map<int, Map<String, dynamic>> answerHistory,
+      List<Map<String, dynamic>>? examQuizList,
+      ) async {
+    return await showDialog<int>(
+      context: context,
+      builder: (BuildContext context) {
+        return QuestionSelectionDialog(
+          number: totalQuestion,
+          questionAt: number,
+          answerHistory: answerHistory,
+          examQuizList: examQuizList,
+        );
+      },
     );
   }
 }
