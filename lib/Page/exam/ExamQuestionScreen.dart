@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:quizapp_fe/model/quiz_api.dart';
 
 class ExamQuestionScreen extends StatefulWidget {
-  const ExamQuestionScreen( int idquiz, {Key? key}) : super(key: key);
+  final int idquizd;
+
+  const ExamQuestionScreen(this.idquizd, {Key? key}) : super(key: key);
 
   @override
   State<ExamQuestionScreen> createState() => _ExamQuestionScreenState();
@@ -10,33 +13,101 @@ class ExamQuestionScreen extends StatefulWidget {
 
 class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
   int? _selectedAnswer;
-  final List<String> _answers = [
-    'Nước Đại Việt lâm vào khủng hoảng trầm trọng.',
-    'Nhà Trần đang giai đoạn phát triển thịnh đạt.',
-    'Giặc Tống sang xâm lược nước ta lần thứ nhất.',
-    'Chế độ phong kiến Việt Nam phát triển đỉnh cao.',
-  ];
+  bool _hasAnswered = false;
+  Map<String, dynamic>? examapi;
+  int? _number;
+  int? totalQuestion;
+
+  late QuizApiService _quizApiService;
+  String? question;
+  String? type;
+  List<Map<String, dynamic>>? examQuizList;
+  List<Map<String, dynamic>>? answers;
+
+  // Lưu trữ lịch sử trả lời: Map với key là số câu hỏi, value là {selectedAnswer, hasAnswered}
+  final Map<int, Map<String, dynamic>> _answerHistory = {};
+
   @override
   void initState() {
     super.initState();
-    // Cấu hình status bar
+    _number = 1;
+    _quizApiService = QuizApiService();
+    fetchAPIexam(widget.idquizd);
+
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent, // Nền trong suốt
-      statusBarIconBrightness: Brightness.light, // Biểu tượng trắng
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
     ));
   }
+
+  Future<void> fetchAPIexam(int idquiz) async {
+    try {
+      examapi = await _quizApiService.getExam(idquiz);
+
+      setState(() {
+        totalQuestion = examapi?["numberexamQuizDTO"] ?? 0;
+        examQuizList = List<Map<String, dynamic>>.from(examapi?["examQuizDTO"] ?? []);
+
+        if (examQuizList == null || examQuizList!.isEmpty) {
+          print("Danh sách câu hỏi rỗng hoặc null");
+          question = "Không có câu hỏi";
+          type = "";
+          answers = [];
+          return;
+        }
+
+        // Đảm bảo _number hợp lệ
+        if (_number! < 1 || _number! > examQuizList!.length) {
+          print("Số câu hỏi không hợp lệ: $_number");
+          _number = 1;
+        }
+
+        int questionIndex = _number! - 1;
+        question = examQuizList![questionIndex]["content"] ?? "Không có nội dung";
+        type = examQuizList![questionIndex]["type"] ?? "";
+        answers = List<Map<String, dynamic>>.from(examQuizList![questionIndex]["answers"] ?? []);
+
+        // Kiểm tra lịch sử trả lời cho câu hỏi hiện tại
+        if (_answerHistory.containsKey(_number)) {
+          _selectedAnswer = _answerHistory[_number]!['selectedAnswer'];
+          _hasAnswered = _answerHistory[_number]!['hasAnswered'];
+        } else {
+          _selectedAnswer = null;
+          _hasAnswered = false;
+        }
+
+        print("Answers: $answers");
+        print("Answer History: $_answerHistory");
+      });
+    } catch (e) {
+      print("Lỗi khi lấy dữ liệu từ API: $e");
+      setState(() {
+        question = "Lỗi tải câu hỏi";
+        type = "";
+        answers = [];
+      });
+    }
+  }
+
+  // Hàm lưu đáp án vào lịch sử
+  void _saveAnswerToHistory(int questionNumber, int? selectedAnswer, bool hasAnswered) {
+    _answerHistory[questionNumber] = {
+      'selectedAnswer': selectedAnswer,
+      'hasAnswered': hasAnswered,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF8BBD0), // Light pink
-              Color(0xFFFCE4EC), // Very light pink
+              Color(0xFFF8BBD0),
+              Color(0xFFFCE4EC),
             ],
           ),
         ),
@@ -44,34 +115,35 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           child: Column(
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Back button
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon:
-                            const Icon(Icons.arrow_back, color: Colors.black54, size: 15,),
-                        onPressed: () {},
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.black54,
+                          size: 15,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12.0, vertical: 0.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.timer_outlined,
-                              size: 18, color: Colors.black54),
+                          Icon(Icons.timer_outlined, size: 18, color: Colors.black54),
                           SizedBox(width: 4),
                           Text(
                             '00 : 10 : 09',
@@ -91,30 +163,11 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                   ],
                 ),
               ),
-              // Padding(
-              //   padding: const EdgeInsets.only(right: 16, left: 16, bottom: 0, top: 0),                child: Row(
-              //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //     children: [
-              //       const Text(
-              //         'Phần 1',
-              //         style: TextStyle(
-              //           fontSize: 15,
-              //           fontWeight: FontWeight.bold,
-              //           color: Colors.black87,
-              //         ),
-              //       ),
-              //       IconButton(
-              //         icon: const Icon(Icons.more_horiz, color: Colors.black54),
-              //         onPressed: () {},
-              //       ),
-              //     ],
-              //   ),
-              // ),
               const Divider(
                 color: Colors.white,
-                thickness: 1, // Độ dày của đường kẻ
-                indent: 16, // Khoảng cách thụt đầu
-                endIndent: 16, // Khoảng cách thụt cuối
+                thickness: 1,
+                indent: 16,
+                endIndent: 16,
               ),
               Expanded(
                 child: Padding(
@@ -123,20 +176,20 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Câu 1:',
-                              style: TextStyle(
+                              'Câu $_number:',
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF673AB7),
                               ),
                             ),
                             Text(
-                              '1 đáp án',
-                              style: TextStyle(
+                              '$type',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.black54,
                               ),
@@ -144,25 +197,46 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Cuộc cải cách của Hồ Quý Ly tiến hành trong bối cảnh lịch sử nào sau đây?',
-                          style: TextStyle(
+                        Text(
+                          "$question",
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                             color: Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        ListView.builder(
-                          shrinkWrap: true, // Đảm bảo ListView chiếm đúng không gian cần thiết
-                          physics: const NeverScrollableScrollPhysics(), // Tắt cuộn riêng của ListView
-                          itemCount: _answers.length,
+                        answers == null || answers!.isEmpty
+                            ? const Text(
+                          'Không có đáp án nào để hiển thị',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.red,
+                          ),
+                        )
+                            : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: answers?.length ?? 0,
                           itemBuilder: (context, index) {
+                            final answer = answers![index];
+                            bool isCorrect = answer["correct"] == true;
+                            bool isSelected = _selectedAnswer == index;
+                            Color backgroundColor = Colors.white;
+
+                            if (_hasAnswered) {
+                              if (isCorrect) {
+                                backgroundColor = Colors.green[100]!; // Đáp án đúng: xanh
+                              } else if (isSelected && !isCorrect) {
+                                backgroundColor = Colors.red[100]!; // Đáp án sai: đỏ
+                              }
+                            }
+
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12.0),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: backgroundColor,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
@@ -175,7 +249,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                                 ),
                                 child: RadioListTile<int>(
                                   title: Text(
-                                    _answers[index],
+                                    answer["content"]?.toString() ?? 'Không có dữ liệu',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       color: Colors.black87,
@@ -183,9 +257,15 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                                   ),
                                   value: index,
                                   groupValue: _selectedAnswer,
-                                  onChanged: (int? value) {
+                                  onChanged: _hasAnswered
+                                      ? null
+                                      : (int? value) {
                                     setState(() {
                                       _selectedAnswer = value;
+                                      _hasAnswered = true;
+                                      _saveAnswerToHistory(_number!, value, true);
+                                      print("Đáp án được chọn: $value, Đúng: ${answers![value!]["correct"]}");
+                                      print("Answer History: $_answerHistory");
                                     });
                                   },
                                   activeColor: const Color(0xFF673AB7),
@@ -205,17 +285,15 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
               ),
               const Divider(
                 color: Colors.white,
-                thickness: 1, // Độ dày của đường kẻ
-                indent: 16, // Khoảng cách thụt đầu
-                endIndent: 16, // Khoảng cách thụt cuối
+                thickness: 1,
+                indent: 16,
+                endIndent: 16,
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 3.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 3.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Previous button
                     Container(
                       width: 40,
                       height: 40,
@@ -232,16 +310,19 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                         ],
                       ),
                       child: IconButton(
-                        icon:
-                            const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () {},
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () {
+                          if (_number! > 1) {
+                            setState(() {
+                              _number = _number! - 1;
+                              fetchAPIexam(widget.idquizd);
+                            });
+                          }
+                        },
                       ),
                     ),
-
-                    // Question counter
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                       decoration: BoxDecoration(
                         color: Colors.blue,
                         borderRadius: BorderRadius.circular(20),
@@ -254,14 +335,13 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                           ),
                         ],
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.menu_book_outlined,
-                              size: 18, color: Colors.white),
-                          SizedBox(width: 4),
+                          const Icon(Icons.menu_book_outlined, size: 18, color: Colors.white),
+                          const SizedBox(width: 4),
                           Text(
-                            '1/10 câu',
-                            style: TextStyle(
+                            '$_number/$totalQuestion câu',
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -270,12 +350,11 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                         ],
                       ),
                     ),
-                    // Next button
                     Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF06292), // Pink
+                        color: const Color(0xFFF06292),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -287,9 +366,15 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                         ],
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.arrow_forward,
-                            color: Colors.white),
-                        onPressed: () {},
+                        icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                        onPressed: () {
+                          if (_number! < totalQuestion!) {
+                            setState(() {
+                              _number = _number! + 1;
+                              fetchAPIexam(widget.idquizd);
+                            });
+                          }
+                        },
                       ),
                     ),
                   ],

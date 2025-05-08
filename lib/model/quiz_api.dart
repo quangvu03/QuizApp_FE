@@ -166,7 +166,6 @@ class QuizApiService {
           'Accept': 'application/json; charset=UTF-8',
         },
       );
-      print("url + + + ${BaseUrl.url}/quiz/question/getExam/${idQuiz}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data =
