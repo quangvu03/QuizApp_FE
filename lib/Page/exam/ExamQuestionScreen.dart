@@ -145,7 +145,15 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                         children: [
                           Icon(Icons.timer_outlined, size: 18, color: Colors.black54),
                           SizedBox(width: 4),
-git                         ],
+                          Text(
+                            '00 : 10 : 09',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     IconButton(
