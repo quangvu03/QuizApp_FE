@@ -4,7 +4,7 @@ import 'package:quizapp_fe/Page/exam/QuestionButton.dart';
 class QuestionSelectionDialog extends StatefulWidget {
   final int? number;
   final int? questionAt;
-  final Map<int, Map<String, dynamic>> answerHistory;
+  final List<Map<String, dynamic>> answerHistory;
   final List<Map<String, dynamic>>? examQuizList;
 
   const QuestionSelectionDialog({
@@ -30,33 +30,42 @@ class _QuestionSelectionDialogState extends State<QuestionSelectionDialog> {
     _question = widget.questionAt;
   }
 
-  // Hàm kiểm tra trạng thái câu hỏi
   Map<String, dynamic> getQuestionStatus(int questionNumber) {
-    if (!widget.answerHistory.containsKey(questionNumber)) {
+    if (widget.examQuizList == null || questionNumber < 1 || questionNumber > widget.examQuizList!.length) {
       return {'status': 'unanswered', 'borderColor': Colors.grey[300]!};
     }
 
-    final answerData = widget.answerHistory[questionNumber]!;
-    if (!answerData['hasAnswered']) {
+    // Lấy questionId từ examQuizList
+    final questionId = widget.examQuizList![questionNumber - 1]["id"];
+    final answers = List<Map<String, dynamic>>.from(widget.examQuizList![questionNumber - 1]["answers"] ?? []);
+
+    // Tìm lịch sử trả lời dựa trên questionId
+    final historyEntry = widget.answerHistory.firstWhere(
+          (entry) => entry['questionId'] == questionId,
+      orElse: () => {},
+    );
+
+    // Nếu không có lịch sử hoặc answerId là null, coi như chưa trả lời
+    if (historyEntry.isEmpty || !historyEntry.containsKey('answerId') || historyEntry['answerId'] == null) {
       return {'status': 'unanswered', 'borderColor': Colors.grey[300]!};
     }
 
-    final selectedAnswerIndex = answerData['selectedAnswer'] as int?;
-    if (selectedAnswerIndex == null) {
+    // Lấy answerId từ lịch sử
+    final answerId = historyEntry['answerId'] as int?;
+
+    // Tìm đáp án trong danh sách answers
+    final selectedAnswer = answers.firstWhere(
+          (answer) => answer["id"] == answerId,
+      orElse: () => {},
+    );
+
+    // Nếu không tìm thấy đáp án, coi như chưa trả lời
+    if (selectedAnswer.isEmpty) {
       return {'status': 'unanswered', 'borderColor': Colors.grey[300]!};
     }
 
-    final questionIndex = questionNumber - 1;
-    if (widget.examQuizList == null || questionIndex >= widget.examQuizList!.length) {
-      return {'status': 'unanswered', 'borderColor': Colors.grey[300]!};
-    }
-
-    final answers = List<Map<String, dynamic>>.from(widget.examQuizList![questionIndex]["answers"] ?? []);
-    if (selectedAnswerIndex >= answers.length) {
-      return {'status': 'unanswered', 'borderColor': Colors.grey[300]!};
-    }
-
-    final isCorrect = answers[selectedAnswerIndex]["correct"] == true;
+    // Xác định đúng/sai dựa trên correct
+    final isCorrect = selectedAnswer["correct"] == true;
     return {
       'status': isCorrect ? 'correct' : 'incorrect',
       'borderColor': isCorrect ? Colors.green : Colors.red,
