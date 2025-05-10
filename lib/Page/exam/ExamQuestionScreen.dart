@@ -1,11 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:quizapp_fe/Page/details/details.dart';
 import 'package:quizapp_fe/Page/exam/QuestionSelectionDialog.dart';
 import 'package:quizapp_fe/Page/exam/QuizResultDetails.dart';
+import 'package:quizapp_fe/entities/Takeanswer.dart';
+import 'package:quizapp_fe/entities/take.dart';
+import 'package:quizapp_fe/entities/user.dart';
+import 'package:quizapp_fe/helpers/Toast_helper.dart';
+import 'package:quizapp_fe/model/Takeanswer_api.dart';
+import 'package:quizapp_fe/model/account_api.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
-
+import 'package:quizapp_fe/model/take_api.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 class ExamQuestionScreen extends StatefulWidget {
   final int idquizd;
 
@@ -22,13 +28,17 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
   Map<String, dynamic>? examapi;
   int? _number;
   int? totalQuestion;
-
+  int? idUser;
+  int? idQuiz;
   late QuizApiService _quizApiService;
+  late TakeApi _takeApi;
+  late TakeAnswerApi _takeAnswerApi;
+
   String? question;
   String? type;
   List<Map<String, dynamic>>? examQuizList;
   List<Map<String, dynamic>>? answers;
-
+  var accountApi = AccountApi();
   final List<Map<String, dynamic>> _answerHistory = [];
   bool _hasPrintedAnswers = false;
 
@@ -41,8 +51,11 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
     _number = 1;
     _countCorrect = 0;
     _quizApiService = QuizApiService();
+    _takeApi = TakeApi();
     fetchAPIexam(widget.idquizd);
-
+    idQuiz = widget.idquizd;
+    _takeAnswerApi = TakeAnswerApi();
+    _loadUser();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _seconds.value++;
     });
@@ -60,11 +73,31 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
     super.dispose();
   }
 
+  Future<void> _loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? username = prefs.getString('username');
+    if (username != null) {
+      try {
+        User user = await accountApi.checkUsername(username);
+        setState(() {
+          idUser = user.id;
+        });
+      } catch (e) {
+        print("Error loading user: $e");
+        ToastHelper.showError("Không thể tải thông tin người dùng");
+      }
+    } else {
+      print("usernull");
+      ToastHelper.showError("Vui lòng đăng nhập lại");
+    }
+  }
+
   String _formatTime(int seconds) {
     int hours = seconds ~/ 3600;
     int minutes = (seconds % 3600) ~/ 60;
     int secs = seconds % 60;
-    return '${hours.toString().padLeft(2, '0')} : ${minutes.toString().padLeft(2, '0')} : ${secs.toString().padLeft(2, '0')}';
+    return '${hours.toString().padLeft(2, '0')} : ${minutes.toString().padLeft(
+        2, '0')} : ${secs.toString().padLeft(2, '0')}';
   }
 
   Future<void> fetchAPIexam(int idquiz) async {
@@ -153,10 +186,9 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
 
   bool areAllQuestionsAnswered() {
     if (examQuizList == null || examQuizList!.isEmpty) {
-      return false; // Không có câu hỏi nào để kiểm tra
+      return false;
     }
 
-    // Kiểm tra xem mỗi câu hỏi có trong answerHistory với answerId không null
     for (var question in examQuizList!) {
       int questionId = question['id'];
       var historyEntry = _answerHistory.firstWhere(
@@ -169,12 +201,11 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
       }
     }
 
-    return true; // Tất cả câu hỏi đã được trả lời
+    return true;
   }
 
-  void printAllAnswers() {
+  Future<void> printAllAnswers() async {
     int correctCount = 0;
-    print("Tất cả câu hỏi đã được trả lời. Danh sách đáp án:");
     for (var question in examQuizList!) {
       int questionId = question['id'];
       String questionContent = question['content'] ?? "Không có nội dung";
@@ -184,7 +215,8 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
       );
 
       if (historyEntry.isNotEmpty && historyEntry['answerId'] != null) {
-        var answers = List<Map<String, dynamic>>.from(question['answers'] ?? []);
+        var answers = List<Map<String, dynamic>>.from(
+            question['answers'] ?? []);
         var selectedAnswer = answers.firstWhere(
               (answer) => answer['id'] == historyEntry['answerId'],
           orElse: () => {'content': 'Không tìm thấy đáp án', 'correct': false},
@@ -204,7 +236,30 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
     print("Số đáp án đúng: $_countCorrect/$totalQuestion");
     String formattedTime = _formatTime(_seconds.value);
     _timer.cancel();
-    Navigator.push(context, MaterialPageRoute(builder: (context) => QuizResultScreen(totalQuestion!,_countCorrect!,formattedTime),));
+    double score = (10 / totalQuestion!) * _countCorrect!;
+    final data = await _takeApi.saveTake(Take(score: score,
+        correct: _countCorrect,
+        time: formattedTime,
+        quizId: idQuiz,
+        userId: idUser));
+
+    int idTake = data!["id"];
+
+
+    print("ans: $_answerHistory");
+
+    List<TakeAnswer> takeAnswers = _answerHistory
+        .map((item) => TakeAnswer.fromMap({
+      ...item,
+      'takeId' : idTake,
+    }))
+        .toList();
+
+    final dataAnswer = await _takeAnswerApi.saveTakeAnswers(takeAnswers);
+
+    Navigator.push(context, MaterialPageRoute(builder: (context) =>
+        QuizResultScreen(totalQuestion!, _countCorrect!, formattedTime, dataAnswer,
+          examQuizList,),));
   }
 
   @override
@@ -535,13 +590,11 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
     );
   }
 
-  Future<int?> showQuestionSelectionDialog(
-      BuildContext context,
+  Future<int?> showQuestionSelectionDialog(BuildContext context,
       int? totalQuestion,
       int? number,
       List<Map<String, dynamic>> answerHistory,
-      List<Map<String, dynamic>>? examQuizList,
-      ) async {
+      List<Map<String, dynamic>>? examQuizList,) async {
     return await showDialog<int>(
       context: context,
       builder: (BuildContext context) {

@@ -24,7 +24,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   TextEditingController usernameController = TextEditingController(text: "");
   User? user;
   bool isLoading = false;
-  String? _avatarUrl; // Lưu URL hoặc tên file ảnh từ SharedPreferences
+  String? _avatarUrl;
 
   @override
   void dispose() {

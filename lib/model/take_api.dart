@@ -53,29 +53,5 @@ class TakeApi {
       return null;
     }
   }
-}
-
-
-
-
-void main() async {
-  // Tạo một đối tượng Take
-  Take take = Take(
-    userId: 1,
-    quizId: 1,
-    status: 1,
-    score: 80,
-    time: "15:30",
-    correct: 10,
-    finishedAt: "2025-05-09T15:30:00",
-  );
-
-  // Tạo đối tượng TakeApi
-  TakeApi takeApi = TakeApi();
-
-  // Gọi hàm saveTake và đợi kết quả trả về
-  var id = await takeApi.findById(1);
-
-  print("id: $id");
 
 }

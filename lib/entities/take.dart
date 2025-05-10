@@ -5,7 +5,7 @@ class Take {
   final int? userId;
   final int? quizId;
   final int? status;
-  final int? score;
+  final double? score;
   final String? time;
   final int? correct;
   final String? finishedAt;

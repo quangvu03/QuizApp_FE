@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/exam/QuestionSelectionDialog.dart';
+import 'package:quizapp_fe/entities/Takeanswer.dart';
 
 class QuizResultScreen extends StatefulWidget {
   final int totalQuestion;
   final int countCorrect;
-  final String time; // Changed from Timer to String
+  final String time;
+  final List<TakeAnswer> listTake;
+  final List<Map<String, dynamic>>? examQuizList;
 
-  QuizResultScreen(this.totalQuestion, this.countCorrect, this.time);
+  const QuizResultScreen(
+      this.totalQuestion,
+      this.countCorrect,
+      this.time,
+      this.listTake,
+      this.examQuizList, {
+        Key? key,
+      }) : super(key: key);
 
   @override
   _QuizResultScreenState createState() => _QuizResultScreenState();
@@ -16,6 +27,9 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   int? countCorrect;
   double? score;
   String? time;
+  List<TakeAnswer>? _listTake;
+  int? _number;
+  List<Map<String, dynamic>>? _examQuizList;
 
   @override
   void initState() {
@@ -24,6 +38,9 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     countCorrect = widget.countCorrect;
     score = (10 / _totalQuestion!) * countCorrect!;
     time = widget.time;
+    _listTake = widget.listTake;
+    _number = 1;
+    _examQuizList = widget.examQuizList;
   }
 
   @override
@@ -45,8 +62,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             children: [
               // App bar
               Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
                   children: [
                     IconButton(
@@ -150,16 +166,14 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: score! < 5.0
                                               ? Colors.red
                                               : score! < 7.0
                                               ? Colors.orange
                                               : Colors.green,
-                                          borderRadius:
-                                          BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(16),
                                         ),
                                         child: Text(
                                           score! < 5.0
@@ -183,10 +197,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                     crossAxisSpacing: 16,
                                     mainAxisSpacing: 12,
                                     shrinkWrap: true,
-                                    physics:
-                                    const NeverScrollableScrollPhysics(),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
                                     childAspectRatio: 1.8,
                                     children: [
                                       _buildStatItem(
@@ -194,8 +206,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                           '$_totalQuestion',
                                           Icons.question_mark,
                                           Colors.amber.shade200),
-                                      _buildStatItem('Bỏ trống', '0',
-                                          Icons.warning, Colors.amber.shade200),
+                                      _buildStatItem('Bỏ trống', '0', Icons.warning, Colors.amber.shade200),
                                       _buildStatItem(
                                           'Đúng',
                                           '$countCorrect',
@@ -244,20 +255,17 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                               child: Column(
                                 children: [
                                   Row(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Container(
                                         width: 60,
                                         height: 60,
                                         decoration: BoxDecoration(
                                           color: Colors.grey.shade200,
-                                          borderRadius:
-                                          BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Column(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
                                             Text(
                                               score!.toStringAsFixed(2),
@@ -279,8 +287,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                       const SizedBox(width: 16),
                                       const Expanded(
                                         child: Column(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'Đã hoàn thành',
@@ -299,12 +306,11 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                   ),
                                   const SizedBox(height: 12),
                                   Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Flexible(
                                         child: Text(
-                                          'Thời gian: $time', // Display formatted time directly
+                                          'Thời gian: $time',
                                           style: const TextStyle(fontSize: 14),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -320,23 +326,18 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Flexible(
                                         child: RichText(
                                           text: TextSpan(
-                                            style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.black),
+                                            style: const TextStyle(fontSize: 14, color: Colors.black),
                                             children: [
                                               const TextSpan(text: 'Đúng: '),
                                               TextSpan(
                                                 text: '$countCorrect câu',
                                                 style: const TextStyle(
-                                                    color: Colors.green,
-                                                    fontWeight:
-                                                    FontWeight.bold),
+                                                    color: Colors.green, fontWeight: FontWeight.bold),
                                               ),
                                             ],
                                           ),
@@ -346,18 +347,13 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                       Flexible(
                                         child: RichText(
                                           text: TextSpan(
-                                            style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.black),
+                                            style: const TextStyle(fontSize: 14, color: Colors.black),
                                             children: [
                                               const TextSpan(text: 'Sai: '),
                                               TextSpan(
-                                                text:
-                                                '${_totalQuestion! - countCorrect!} câu',
+                                                text: '${_totalQuestion! - countCorrect!} câu',
                                                 style: const TextStyle(
-                                                    color: Colors.red,
-                                                    fontWeight:
-                                                    FontWeight.bold),
+                                                    color: Colors.red, fontWeight: FontWeight.bold),
                                               ),
                                             ],
                                           ),
@@ -368,20 +364,32 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                   ),
                                   const Divider(height: 24),
                                   ElevatedButton(
-                                    onPressed: () {},
-                                    child: const Text('Xem chi tiết'),
+                                    onPressed: () {
+                                      if (_listTake != null && _examQuizList != null) {
+                                        showQuestionSelectionDialog(
+                                          context,
+                                          _totalQuestion,
+                                          _number,
+                                          _listTake!.map((takeAnswer) => takeAnswer.toMap()).toList(),
+                                          _examQuizList,
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Dữ liệu không hợp lệ')),
+                                        );
+                                      }
+                                    },
                                     style: ElevatedButton.styleFrom(
-                                      minimumSize:
-                                      const Size(double.infinity, 40),
+                                      minimumSize: const Size(double.infinity, 40),
                                       backgroundColor: Colors.white,
                                       foregroundColor: Colors.blue,
                                       elevation: 0,
-                                      side:
-                                      const BorderSide(color: Colors.blue),
+                                      side: const BorderSide(color: Colors.blue),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
+                                    child: const Text('Xem chi tiết'),
                                   ),
                                 ],
                               ),
@@ -424,19 +432,19 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                     ),
                     child: ElevatedButton(
                       onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
                       child: const Text(
                         'Làm lại bài thi',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
                         ),
                       ),
                     ),
@@ -447,20 +455,20 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {},
-                      child: const Text(
-                        'Làm lại câu sai',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         elevation: 0,
                         side: const BorderSide(color: Colors.blue),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      child: const Text(
+                        'Làm lại câu sai',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
                         ),
                       ),
                     ),
@@ -474,8 +482,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  Widget _buildStatItem(
-      String label, String value, IconData icon, Color iconBgColor) {
+  Widget _buildStatItem(String label, String value, IconData icon, Color iconBgColor) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
@@ -530,6 +537,26 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<int?> showQuestionSelectionDialog(
+      BuildContext context,
+      int? totalQuestion,
+      int? number,
+      List<Map<String, dynamic>> answerHistory,
+      List<Map<String, dynamic>>? examQuizList,
+      ) async {
+    return await showDialog<int>(
+      context: context,
+      builder: (BuildContext context) {
+        return QuestionSelectionDialog(
+          number: totalQuestion,
+          questionAt: number,
+          answerHistory: answerHistory,
+          examQuizList: examQuizList,
+        );
+      },
     );
   }
 }
