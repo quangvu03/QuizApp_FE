@@ -1,5 +1,7 @@
+// QuizResultScreen.dart
 import 'package:flutter/material.dart';
-import 'package:quizapp_fe/Page/exam/QuestionSelectionDialog.dart';
+import 'package:quizapp_fe/Page/exam/QuestionDialog.dart';
+import 'package:quizapp_fe/Page/exam/TestResultScreen.dart';
 import 'package:quizapp_fe/entities/Takeanswer.dart';
 
 class QuizResultScreen extends StatefulWidget {
@@ -8,13 +10,16 @@ class QuizResultScreen extends StatefulWidget {
   final String time;
   final List<TakeAnswer> listTake;
   final List<Map<String, dynamic>>? examQuizList;
+  final int? idTake;
 
   const QuizResultScreen(
       this.totalQuestion,
       this.countCorrect,
       this.time,
       this.listTake,
-      this.examQuizList, {
+      this.examQuizList,
+      this.idTake,
+      {
         Key? key,
       }) : super(key: key);
 
@@ -30,6 +35,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   List<TakeAnswer>? _listTake;
   int? _number;
   List<Map<String, dynamic>>? _examQuizList;
+  int? _idTake;
 
   @override
   void initState() {
@@ -41,6 +47,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     _listTake = widget.listTake;
     _number = 1;
     _examQuizList = widget.examQuizList;
+    _idTake = widget.idTake;
   }
 
   @override
@@ -52,15 +59,14 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE0B0FF), // Light purple pink
-              Color(0xFFADD8E6), // Light blue
+              Color(0xFFE0B0FF),
+              Color(0xFFADD8E6),
             ],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // App bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
@@ -87,7 +93,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                   ],
                 ),
               ),
-
               Expanded(
                 child: SingleChildScrollView(
                   child: ConstrainedBox(
@@ -96,7 +101,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                     ),
                     child: Column(
                       children: [
-                        // Result card
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Card(
@@ -109,7 +113,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                               padding: const EdgeInsets.all(16.0),
                               child: Column(
                                 children: [
-                                  // Score circle
                                   Container(
                                     width: 120,
                                     height: 120,
@@ -153,8 +156,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-
-                                  // Rating section
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -190,8 +191,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 16),
-
-                                  // Statistics - Using GridView
                                   GridView.count(
                                     crossAxisCount: 2,
                                     crossAxisSpacing: 16,
@@ -224,8 +223,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                             ),
                           ),
                         ),
-
-                        // Detailed results section
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16.0),
                           child: Align(
@@ -240,8 +237,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-
-                        // Section result card
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Card(
@@ -366,16 +361,19 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                   ElevatedButton(
                                     onPressed: () {
                                       if (_listTake != null && _examQuizList != null) {
-                                        showQuestionSelectionDialog(
+                                        Navigator.push(
                                           context,
-                                          _totalQuestion,
-                                          _number,
-                                          _listTake!.map((takeAnswer) => takeAnswer.toMap()).toList(),
-                                          _examQuizList,
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Dữ liệu không hợp lệ')),
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                            TestResultScreen(idTake: _idTake),
+                                            //     QuestionDialog(
+                                            //   totalQuestion: _totalQuestion,
+                                            //   number: _number,
+                                            //   list: _listTake!.map((takeAnswer) => takeAnswer.toMap()).toList(),
+                                            //   examQuizList: _examQuizList,
+                                            //   score: score,
+                                            // ),
+                                          ),
                                         );
                                       }
                                     },
@@ -396,7 +394,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 240),
                       ],
                     ),
@@ -412,7 +409,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Fixed buttons
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -450,7 +446,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Container(
+                  SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
@@ -537,26 +533,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Future<int?> showQuestionSelectionDialog(
-      BuildContext context,
-      int? totalQuestion,
-      int? number,
-      List<Map<String, dynamic>> answerHistory,
-      List<Map<String, dynamic>>? examQuizList,
-      ) async {
-    return await showDialog<int>(
-      context: context,
-      builder: (BuildContext context) {
-        return QuestionSelectionDialog(
-          number: totalQuestion,
-          questionAt: number,
-          answerHistory: answerHistory,
-          examQuizList: examQuizList,
-        );
-      },
     );
   }
 }

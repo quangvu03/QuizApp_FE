@@ -1,13 +1,118 @@
 import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/exam/QuestionButton.dart';
+import 'package:quizapp_fe/Page/exam/QuestionDialog.dart';
+import 'package:quizapp_fe/model/take_api.dart';
 
+class TestResultScreen extends StatefulWidget {
+  final int? idTake;
 
-class TestResultScreen extends StatelessWidget {
-  const TestResultScreen({Key? key}) : super(key: key);
+  const TestResultScreen({Key? key, required this.idTake}) : super(key: key);
+
+  @override
+  _TestResultScreenState createState() => _TestResultScreenState();
+}
+
+class _TestResultScreenState extends State<TestResultScreen> {
+  Map<String, dynamic>? data;
+  int? _idTake;
+  late TakeApi _takeApi;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _takeApi = TakeApi();
+    _idTake = widget.idTake;
+    _loadData();
+  }
+
+  void _loadData() async {
+    if (_idTake != null) {
+      try {
+        final result = await _takeApi.getDetailstakeExam(_idTake!);
+        print("-------------------------------------");
+        print("::_idtake:: $_idTake");
+        print("::result:: $result");
+
+        setState(() {
+          data = result;
+          _isLoading = false;
+        });
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi tải dữ liệu: $e')),
+        );
+      }
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showQuestionDialog(int questionIndex) {
+    final detailsAnswer = data!['detailsAnswer'] as List<dynamic>? ?? [];
+    // Ép kiểu List<dynamic> thành List<Map<String, dynamic>>
+    final questions = detailsAnswer.map((item) => item as Map<String, dynamic>).toList();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuestionDialog(
+          totalQuestion: detailsAnswer.length,
+          initialQuestionIndex: questionIndex,
+          questions: questions,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final correctAnswers = [7, 8, 13, 15, 20];
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (data == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Không thể tải dữ liệu kết quả thi.'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  _loadData();
+                },
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final detailsAnswer = data!['detailsAnswer'] as List<dynamic>? ?? [];
+    final correctCount = detailsAnswer.where((q) {
+      final userAnswerId = q['answerId'];
+      final answers = q['demoAnswers'] as List<dynamic>? ?? [];
+      return answers.any(
+            (a) => a['id'] == userAnswerId && (a['correct'] as bool? ?? false),
+      );
+    }).length;
+    final totalQuestions = detailsAnswer.length;
+    final incorrectCount = totalQuestions - correctCount;
+    final score = (totalQuestions/10)*correctCount;
+    final duration = data!['duration']?.toString() ?? '00:00:00';
 
     return Scaffold(
       body: Container(
@@ -22,8 +127,7 @@ class TestResultScreen extends StatelessWidget {
             children: [
               // App bar
               Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
                   children: [
                     Container(
@@ -34,7 +138,7 @@ class TestResultScreen extends StatelessWidget {
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.black),
                         onPressed: () {
-                          // Handle back navigation
+                          Navigator.pop(context);
                         },
                       ),
                     ),
@@ -50,13 +154,11 @@ class TestResultScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 20), // Balance the back button
+                    const SizedBox(width: 20),
                   ],
                 ),
               ),
-
               const SizedBox(height: 8),
-
               // Result card
               Expanded(
                 child: Padding(
@@ -75,7 +177,6 @@ class TestResultScreen extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Score box
                               Container(
                                 width: 100,
                                 padding: const EdgeInsets.all(16),
@@ -83,16 +184,16 @@ class TestResultScreen extends StatelessWidget {
                                   color: const Color(0xFFF5F5F5),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Column(
+                                child: Column(
                                   children: [
                                     Text(
-                                      '1.92',
-                                      style: TextStyle(
+                                      score.toString(),
+                                      style: const TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       'Điểm',
                                       style: TextStyle(
                                         fontSize: 18,
@@ -103,12 +204,12 @@ class TestResultScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 20),
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
-                                      Text(
+                                      const Text(
                                         'Đúng: ',
                                         style: TextStyle(
                                           fontSize: 16,
@@ -116,8 +217,8 @@ class TestResultScreen extends StatelessWidget {
                                         ),
                                       ),
                                       Text(
-                                        '5 câu',
-                                        style: TextStyle(
+                                        '$correctCount câu',
+                                        style: const TextStyle(
                                           fontSize: 16,
                                           color: Color(0xFF1BC45D),
                                           fontWeight: FontWeight.bold,
@@ -125,10 +226,10 @@ class TestResultScreen extends StatelessWidget {
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 8),
+                                  const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      Text(
+                                      const Text(
                                         'Sai: ',
                                         style: TextStyle(
                                           fontSize: 16,
@@ -136,8 +237,8 @@ class TestResultScreen extends StatelessWidget {
                                         ),
                                       ),
                                       Text(
-                                        '21 câu',
-                                        style: TextStyle(
+                                        '$incorrectCount câu',
+                                        style: const TextStyle(
                                           fontSize: 16,
                                           color: Color(0xFFFF3B30),
                                           fontWeight: FontWeight.bold,
@@ -150,24 +251,22 @@ class TestResultScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-
-                        // Test details
-                        const Padding(
-                          padding: EdgeInsets.symmetric(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
                               horizontal: 16.0, vertical: 8.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Thời gian làm: 00:01:50',
-                                style: TextStyle(
+                                'Thời gian làm: $duration',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   color: Color(0xFF666666),
                                 ),
                               ),
                               Text(
-                                'Số câu: 26 câu',
-                                style: TextStyle(
+                                'Số câu: $totalQuestions câu',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   color: Color(0xFF666666),
                                 ),
@@ -175,10 +274,6 @@ class TestResultScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-
-                        const SizedBox(height: 1),
-
-                        // Question grid
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -191,21 +286,33 @@ class TestResultScreen extends StatelessWidget {
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 16,
                               ),
-                              itemCount: 26,
+                              itemCount: totalQuestions,
                               itemBuilder: (context, index) {
                                 final questionNumber = index + 1;
-                                final isCorrect =
-                                correctAnswers.contains(questionNumber);
+                                final question = detailsAnswer.firstWhere(
+                                      (q) => q['questionId'] == questionNumber,
+                                  orElse: () => null,
+                                );
+                                final isCorrect = question != null &&
+                                    (question['demoAnswers'] as List<dynamic>? ?? [])
+                                        .any(
+                                          (answer) =>
+                                      answer['id'] == question['answerId'] &&
+                                          (answer['correct'] as bool? ?? false),
+                                    );
 
                                 return QuestionButton(
                                   number: questionNumber,
-                                  isHighlighted:
-                                  false, // Không highlight câu nào
+                                  isHighlighted: false,
                                   status: isCorrect ? 'correct' : 'incorrect',
                                   borderColor: isCorrect
                                       ? const Color(0xFF1BC45D)
                                       : const Color(0xFFFF3B30),
-                                  onTap: null, // Có thể thêm hành động nếu cần
+                                  onTap: question != null
+                                      ? () {
+                                    _showQuestionDialog(index);
+                                  }
+                                      : null,
                                 );
                               },
                             ),
@@ -223,5 +330,3 @@ class TestResultScreen extends StatelessWidget {
     );
   }
 }
-
-

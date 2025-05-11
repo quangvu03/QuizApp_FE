@@ -54,4 +54,29 @@ class TakeApi {
     }
   }
 
+  Future<Map<String, dynamic>> getDetailstakeExam(int idTake) async {
+    try {
+      var response = await http.get(
+        Uri.parse("${BaseUrl.url}/take/getDetailsTake?idTake=$idTake"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data =
+        jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['result'] is Map<String, dynamic>) {
+          return data["result"];
+        } else {
+          print("Invalid response format");
+          return {}; // Trả về map rỗng hoặc throw
+        }
+      } else {
+        print("Lỗi khi lấy take: ${response.body}");
+        return {}; // Trả về map rỗng hoặc throw
+      }
+    } catch (e) {
+      print("Lỗi hệ thống: $e");
+      return {}; // Trả về map rỗng hoặc throw
+    }
+  }
 }

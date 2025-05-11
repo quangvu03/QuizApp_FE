@@ -259,7 +259,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
 
     Navigator.push(context, MaterialPageRoute(builder: (context) =>
         QuizResultScreen(totalQuestion!, _countCorrect!, formattedTime, dataAnswer,
-          examQuizList,),));
+          examQuizList,idTake),));
   }
 
   @override
