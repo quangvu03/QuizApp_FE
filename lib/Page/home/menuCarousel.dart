@@ -14,18 +14,17 @@ class _MenuCarouselState extends State<MenuCarousel> {
   @override
   Widget build(BuildContext context) {
     final List<List<Map<String, dynamic>>> menuPages = [
-      // Trang 1
       [
-        {'icon': Icons.star, 'label': 'Bảng xếp hạng'},
-        {'icon': Icons.edit, 'label': 'Đề thi'},
-        {'icon': Icons.book, 'label': 'Ví sử dụng'},
-        {'icon': Icons.class_, 'label': 'Lớp học tập'},
-        {'icon': Icons.school, 'label': 'Phòng thi'},
-        {'icon': Icons.abc, 'label': 'Kết quả của tói'},
+        {'icon': Icons.leaderboard, 'label': 'Bảng xếp hạng', 'color': Colors.yellow},
+        {'icon': Icons.quiz, 'label': 'Đề thi', 'color': Colors.blue},
+        {'icon': Icons.account_balance_wallet, 'label': 'Ví sử dụng', 'color': Colors.green},
+        {'icon': Icons.class_, 'label': 'Lớp học tập', 'color': Colors.orange},
+        {'icon': Icons.school, 'label': 'Phòng thi', 'color': Colors.purple},
+        {'icon': Icons.assessment, 'label': 'Kết quả của tôi', 'color': Colors.red},
       ],
       [
-        {'icon': Icons.message, 'label': 'Kênh đề'},
-        {'icon': Icons.download, 'label': 'Đề thi tải xuổng'},
+        {'icon': Icons.chat_bubble, 'label': 'Kênh đề', 'color': Colors.teal},
+        {'icon': Icons.download, 'label': 'Đề thi tải xuống', 'color': Colors.indigo},
       ]
     ];
 
@@ -46,13 +45,14 @@ class _MenuCarouselState extends State<MenuCarousel> {
                 child: GridView.count(
                   crossAxisCount: 3,
                   childAspectRatio: 0.65,
-                  mainAxisSpacing: 15.0,
+                  mainAxisSpacing: 10.0,
                   crossAxisSpacing: 15.0,
                   physics: const NeverScrollableScrollPhysics(),
                   children: menuPages[index].map((menuItem) {
                     return _buildMenuItem(
                       menuItem['icon'],
                       menuItem['label'],
+                      menuItem['color'],
                     );
                   }).toList(),
                 ),
@@ -80,11 +80,12 @@ class _MenuCarouselState extends State<MenuCarousel> {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String label) {
+  Widget _buildMenuItem(IconData icon, String label, Color color) {
+    bool isHot = label == 'Bảng xếp hạng';
     return InkWell(
       onTap: () {
         if (label == 'Đề thi') {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const DiscoverCourse(),));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const DiscoverCourse()));
         } else if (label == 'Phòng thi') {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Bạn đã nhấn vào Phòng thi!')),
@@ -94,17 +95,64 @@ class _MenuCarouselState extends State<MenuCarousel> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.blue[100],
-            child: Icon(icon, size: 30, color: Colors.blue),
+          Stack(
+            alignment: Alignment.topRight,
+            children: [
+              // Container viền gradient với viền ngoài giống ảnh
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey, width: 2),
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withOpacity(0.8),
+                      color.withOpacity(0.3),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.3),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.transparent,
+                    child: Icon(icon, size: 30, color: Colors.white),
+                  ),
+                ),
+              ),
+              if (isHot)
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Hot',
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           SizedBox(
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 12),
+              style: const TextStyle(fontSize: 12, color: Colors.black),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

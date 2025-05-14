@@ -1,0 +1,561 @@
+import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/createExam/createExam.dart';
+import 'package:quizapp_fe/Page/discoverCourse.dart';
+import 'package:quizapp_fe/Page/infor.dart';
+import 'package:quizapp_fe/helpers/Url.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class managementCourse extends StatefulWidget {
+  const managementCourse({super.key});
+
+  @override
+  _managementCoursePageState createState() => _managementCoursePageState();
+}
+
+class _managementCoursePageState extends State<managementCourse> {
+  int _selectedIndex = 0; // Bottom navigation index
+  int _selectedTabIndex = 0; // Navigation tabs index
+  final ScrollController _scrollController = ScrollController();
+  final ScrollController _tabScrollController =
+  ScrollController(); // Controller for tab scrolling
+
+  // Global keys for each section to scroll to
+  final GlobalKey _thongTinKey = GlobalKey();
+  final GlobalKey _quanLyKey = GlobalKey();
+  final GlobalKey _deThiMoiNhatKey = GlobalKey();
+  final GlobalKey _danhMucDeThiKey = GlobalKey();
+
+  String name = "Noname";
+  String imageUrl = "unknown.png";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _tabScrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSection(GlobalKey key) {
+    final context = key.currentContext;
+    if (context != null) {
+      final RenderBox renderBox = context.findRenderObject() as RenderBox;
+      final position = renderBox.localToGlobal(Offset.zero).dy;
+      _scrollController.animateTo(
+        position + _scrollController.offset - 100, // Adjust for header
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _scrollTabToCenter(int index) {
+    const double tabWidth = 120; // Approximate width of each tab
+    final double offset = index * tabWidth -
+        (MediaQuery.of(context).size.width / 2) +
+        (tabWidth / 2);
+    _tabScrollController.animateTo(
+      offset.clamp(0, _tabScrollController.position.maxScrollExtent),
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? username = prefs.getString('username');
+    String? avatar = prefs.getString('avatar_path');
+    print('Loaded username: $username, avatar: $avatar');
+
+    setState(() {
+      name = username ?? "Noname";
+      imageUrl = avatar ?? "unknown.png";
+    });
+  }
+
+  void _onItemTapped(int index) async {
+    if (index == 3) { // Index 3 corresponds to 'Tài khoản'
+      setState(() {
+        _selectedIndex = 3;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfilePage()),
+      );
+      setState(() {
+        _selectedIndex = 0;
+      });
+    } else if (index == 1) { // Index 1 corresponds to 'Khám phá'
+      setState(() {
+        _selectedIndex = 1;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DiscoverCourse()),
+      );
+      setState(() {
+        _selectedIndex = 0;
+      });
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.blueAccent,
+              Colors.purpleAccent,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Top Header (from HomeScreen)
+              _buildTopHeader(),
+
+              // User Stats Row
+              _buildUserStatsRow(),
+
+              // Navigation Tabs
+              _buildNavigationTabs(),
+
+              // Main Content
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        key: _thongTinKey,
+                        child: _buildThongTinSection(),
+                      ),
+                      Container(
+                        key: _quanLyKey,
+                        child: _buildQuanLySection(),
+                      ),
+                      Container(
+                        key: _deThiMoiNhatKey,
+                        child: _buildDeThiMoiNhatSection(),
+                      ),
+                      Container(
+                        key: _danhMucDeThiKey,
+                        child: _buildDanhMucDeThiSection(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Trang chủ',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore),
+            label: 'Khám phá',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Yêu thích',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark),
+            label: 'Kênh',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Tài khoản',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.pink,
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        onTap: _onItemTapped,
+        backgroundColor: Colors.white.withOpacity(0.9),
+      ),
+    );
+  }
+
+  Widget _buildTopHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.white,
+            child: imageUrl != "unknown.png"
+                ? ClipOval(
+              child: Image.network(
+                "${BaseUrl.urlImage}/$imageUrl",
+                fit: BoxFit.cover,
+                width: 60,
+                height: 60,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.school_outlined,
+                  size: 30,
+                  color: Colors.blueAccent,
+                ),
+              ),
+            )
+                : const Icon(
+              Icons.school_outlined,
+              size: 30,
+              color: Colors.blueAccent,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const Text(
+                "Học sinh/ sinh viên",
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+          const Spacer(),
+          const Icon(Icons.notifications_none, color: Colors.white),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserStatsRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(Icons.remove_red_eye, '4', 'Lượt xem'),
+          _buildStatItem(Icons.check_circle_outline, '0', 'Lượt ôn thi'),
+          _buildStatItem(Icons.article_outlined, '0', 'Đề thi'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.blue, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigationTabs() {
+    return Container(
+      color: Colors.purple[50],
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SingleChildScrollView(
+        controller: _tabScrollController,
+        scrollDirection: Axis.horizontal,
+        physics: const AlwaysScrollableScrollPhysics(), // Đảm bảo luôn cho phép vuốt
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              _buildNavTab('Thông tin', _selectedTabIndex == 0, () {
+                setState(() {
+                  _selectedTabIndex = 0;
+                });
+                _scrollToSection(_thongTinKey);
+                _scrollTabToCenter(0);
+              }),
+              const SizedBox(width: 8),
+              _buildNavTab('Quản lý', _selectedTabIndex == 1, () {
+                setState(() {
+                  _selectedTabIndex = 1;
+                });
+                _scrollToSection(_quanLyKey);
+                _scrollTabToCenter(1);
+              }),
+              const SizedBox(width: 8),
+              _buildNavTab('Đề thi mới nhất', _selectedTabIndex == 2, () {
+                setState(() {
+                  _selectedTabIndex = 2;
+                });
+                _scrollToSection(_deThiMoiNhatKey);
+                _scrollTabToCenter(2);
+              }),
+              const SizedBox(width: 8),
+              _buildNavTab('Danh mục đề thi', _selectedTabIndex == 3, () {
+                setState(() {
+                  _selectedTabIndex = 3;
+                });
+                _scrollToSection(_danhMucDeThiKey);
+                _scrollTabToCenter(3);
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavTab(String label, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isActive ? Colors.blue : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.blue : Colors.black87,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThongTinSection() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue[100]!, Colors.purple[100]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Ví sử dụng',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.7)),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(15),
+                bottomRight: Radius.circular(15),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Quản lý lượt sử dụng của bạn:',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildUsageItem(Icons.checklist, 'Lượt ôn thi'),
+                    _buildUsageItem(Icons.create_outlined, 'Lượt tạo đề thi'),
+                    _buildUsageItem(Icons.quiz_outlined, 'Lượt tạo câu hỏi'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuanLySection() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Quản lý',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Expanded(
+                  child: _buildActionCard(
+                      Icons.edit, 'Chỉnh sửa thông tin', Colors.blue, () {
+                    print("Chỉnh sửa thông tin");
+                  })),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: _buildActionCard(
+                      Icons.grid_view, 'Quản lý danh mục', Colors.purple, () {
+                    print("Quản lý danh mục");
+                  })),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildActionCard(
+              Icons.lightbulb_outline, 'Tạo đề thi', Colors.orange, () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateExamScreen(),));
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeThiMoiNhatSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Đề thi mới nhất',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Card(
+            margin: const EdgeInsets.only(top: 8),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: const ListTile(
+              leading: CircleAvatar(
+                backgroundImage: NetworkImage('https://via.placeholder.com/40'),
+                radius: 20,
+              ),
+              title: Text('ta1'),
+              subtitle: Text('Vũ aba'),
+              trailing:
+              Text('Xem thêm', style: TextStyle(color: Colors.blue)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDanhMucDeThiSection() {
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: Text('Danh mục đề thi sẽ được hiển thị tại đây.',
+          style: TextStyle(fontSize: 16, color: Colors.grey)),
+    );
+  }
+
+  Widget _buildActionCard(IconData icon, String title, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap, // Gắn sự kiện onTap
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: Text(title,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUsageItem(IconData icon, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: Colors.white, size: 24),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+}

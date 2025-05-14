@@ -79,4 +79,33 @@ class TakeApi {
       return {}; // Trả về map rỗng hoặc throw
     }
   }
+
+  Future<Map<String, dynamic>?> getAchievement(int idUser) async {
+    try {
+      var response = await http.get(
+        Uri.parse("${BaseUrl.url}/take/getAvgTake?idUser=$idUser"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data =
+        jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['result'] is Map<String, dynamic>) {
+          return data["result"];
+        } else {
+          print("Invalid response format");
+          return {};
+        }
+      } else {
+        print("Lỗi khi lấy take: ${response.body}");
+        return {};
+      }
+    } catch (e) {
+      print("Lỗi hệ thống: $e");
+      return {};
+    }
+  }
+
 }
+
+

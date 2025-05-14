@@ -1,34 +1,98 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/entities/user.dart';
+import 'package:quizapp_fe/helpers/Toast_helper.dart';
+import 'package:quizapp_fe/model/account_api.dart';
+import 'package:quizapp_fe/model/take_api.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AchievementCarousel extends StatefulWidget {
-  const AchievementCarousel({Key? key}) : super(key: key);
+  const AchievementCarousel({super.key});
 
   @override
   _AchievementCarouselState createState() => _AchievementCarouselState();
 }
 
 class _AchievementCarouselState extends State<AchievementCarousel> {
+  var takeApi;
   int _currentPage = 0;
-  PageController _pageController = PageController(initialPage: 0);
+  final _pageController = PageController(initialPage: 0);
   late Timer _timer;
+  Map<String, dynamic>? dataAchievement;
+  User? _user;
+  AccountApi? accountApi;
 
   @override
   void initState() {
     super.initState();
-
-    _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-      if (_currentPage < 2) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-      _pageController.animateToPage(
-        _currentPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+    takeApi = TakeApi();
+    // Delay timer setup until after the first frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+        if (!mounted) return; // Ensure the widget is still mounted
+        if (_pageController.hasClients) { // Check if controller is attached
+          if (_currentPage < 2) {
+            _currentPage++;
+          } else {
+            _currentPage = 0;
+          }
+          _pageController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
     });
+    _loadUserAndFetchData();
+  }
+
+  Future<void> _loadUserAndFetchData() async {
+    await _loadUser();
+    if (_user != null) {
+      await fetchdataAchivement(_user!.id);
+    }
+  }
+
+  Future<void> fetchdataAchivement(var userId) async {
+    if (userId == null) {
+      ToastHelper.showError("Không thể tải thành tựu: User ID không hợp lệ");
+      return;
+    }
+    try {
+      final data = await takeApi.getAchievement(userId);
+      if (data != null) {
+        setState(() {
+          dataAchievement = data;
+        });
+      } else {
+        ToastHelper.showError("Không có dữ liệu thành tựu");
+      }
+    } catch (e) {
+      print("Error fetching achievement: $e");
+      ToastHelper.showError("Không thể tải thành tựu");
+    }
+  }
+
+  Future<void> _loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? username = prefs.getString('username');
+    if (username != null) {
+      try {
+        accountApi = AccountApi();
+        User? user = await accountApi?.checkUsername(username);
+        setState(() {
+          _user = user;
+        });
+      } catch (e) {
+        print("Error loading user: $e");
+        ToastHelper.showError("Không thể tải thông tin người dùng");
+      }
+    } else {
+      print("usernull");
+      ToastHelper.showError("Vui lòng đăng nhập lại");
+      // Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override
@@ -40,29 +104,33 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    if (_user == null || dataAchievement == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final List<Map<String, dynamic>> achievements = [
       {
         'title': 'Thành tựu trong tháng (Thử thách)',
         'averageLabel': 'Điểm trung bình',
-        'averageScore': '0.10',
-        'totalScore': '39',
+        'averageScore': dataAchievement != null ? '${dataAchievement!["avgScore"]}' : '0.0',
+        'totalScore': dataAchievement != null ? '${dataAchievement!["totalScore"]}' : '0',
         'icon': Icons.emoji_events,
         'iconColor': Colors.yellow,
         'backgroundImage': 'assets/images/home/bgr1.jpg',
       },
       {
         'title': 'Thành tựu tuần này',
-        'averageLabel': 'Điểm trung bình',
-        'averageScore': '8.50',
+        'averageLabel': 'Thời gian làm bài',
+        'averageScore': dataAchievement != null ? '${dataAchievement!["avgtime"]}' : '0',
         'totalScore': '15',
-        'icon': Icons.star,
+        'icon': Icons.timer,
         'iconColor': Colors.orange,
         'backgroundImage': 'assets/images/home/bgr1.jpg',
       },
       {
         'title': 'Thành tựu năm nay',
-        'averageLabel': 'Điểm trung bình',
-        'averageScore': '7.20',
+        'averageLabel': 'Số bài đã làm',
+        'averageScore': dataAchievement != null ? '${dataAchievement!["totalTake"]}' : '0',
         'totalScore': '120',
         'icon': Icons.school,
         'iconColor': Colors.blue,
@@ -85,7 +153,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
             itemBuilder: (context, index) {
               return Container(
                 width: MediaQuery.of(context).size.width - 32,
-                margin: const EdgeInsets.only(right: 8.0),
+                margin: const EdgeInsets.only(right: 8),
                 child: _buildAchievementSection(
                   title: achievements[index]['title'],
                   averageLabel: achievements[index]['averageLabel'],
@@ -100,15 +168,14 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
           ),
         ),
         const SizedBox(height: 8),
-        // Dots indicator
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             achievements.length,
                 (index) => Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-              width: 8.0,
-              height: 8.0,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 8,
+              height: 8,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _currentPage == index ? Colors.pink : Colors.grey[300],
@@ -130,7 +197,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
     required String backgroundImage,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12.0),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
@@ -145,8 +212,8 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
           image: AssetImage(backgroundImage),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.2),
-            BlendMode.dstATop,
+            Colors.white.withOpacity(0.7),
+            BlendMode.srcOver,
           ),
         ),
       ),
@@ -160,7 +227,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white, // Đổi màu chữ để dễ đọc trên nền ảnh
+                  color: Colors.black,
                 ),
               ),
               const Spacer(),
@@ -180,7 +247,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                 children: [
                   Text(
                     averageLabel,
-                    style: TextStyle(color: Colors.grey[300], fontSize: 12),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -188,7 +255,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white, // Đổi màu chữ
+                      color: Colors.black,
                     ),
                   ),
                 ],
@@ -200,15 +267,6 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
                     icon,
                     color: iconColor,
                     size: 26,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    totalScore,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white, // Đổi màu chữ
-                    ),
                   ),
                 ],
               ),

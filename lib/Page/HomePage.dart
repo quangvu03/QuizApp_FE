@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/discoverCourse.dart';
 import 'package:quizapp_fe/Page/home/Carousel.dart';
@@ -9,9 +8,9 @@ import 'package:quizapp_fe/Page/home/menuCarousel.dart';
 import 'package:quizapp_fe/Page/home/recentTestsCarousel.dart';
 import 'package:quizapp_fe/Page/home/collectionsCarousel.dart';
 import 'package:quizapp_fe/Page/infor.dart';
+import 'package:quizapp_fe/Page/managementCourse.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,14 +23,12 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   String name = "Noname";
   String imageUrl = "unknown.png";
-  List<Map<String, dynamic>> achievements = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadUsername();
-    _fetchAchievements();
   }
 
   void _onItemTapped(int index) async {
@@ -59,7 +56,20 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedIndex = 0;
       });
-    } else {
+    } else if (index == 3) {
+      setState(() {
+        _selectedIndex = 3;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const managementCourse()),
+      );
+      setState(() {
+        _selectedIndex = 0;
+      });
+    }
+    else {
       setState(() {
         _selectedIndex = index;
       });
@@ -78,103 +88,18 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _fetchAchievements() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      final response = await http.get(Uri.parse('YOUR_API_ENDPOINT_HERE'));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        setState(() {
-          achievements = data.map((item) {
-            return {
-              'title': item['title'] ?? 'Thành tựu không xác định',
-              'averageLabel': item['averageLabel'] ?? 'Điểm trung bình',
-              'averageScore': item['averageScore'].toString() ?? '0.0',
-              'totalScore': item['totalScore'].toString() ?? '0',
-              'icon': _mapIcon(item['icon'] ?? 'emoji_events'),
-              'iconColor': _mapColor(item['iconColor'] ?? 'yellow'),
-            };
-          }).toList();
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load achievements');
-      }
-    } catch (e) {
-      print('Error fetching achievements: $e');
-      setState(() {
-        isLoading = false;
-        achievements = [
-          {
-            'title': 'Thành tựu trong tháng (Thử thách)',
-            'averageLabel': 'Điểm trung bình',
-            'averageScore': '0.10',
-            'totalScore': '39',
-            'icon': Icons.emoji_events,
-            'iconColor': Colors.yellow,
-          },
-          {
-            'title': 'Thành tựu tuần này',
-            'averageLabel': 'Điểm trung bình',
-            'averageScore': '8.50',
-            'totalScore': '15',
-            'icon': Icons.star,
-            'iconColor': Colors.orange,
-          },
-          {
-            'title': 'Thành tựu năm nay',
-            'averageLabel': 'Điểm trung bình',
-            'averageScore': '7.20',
-            'totalScore': '120',
-            'icon': Icons.school,
-            'iconColor': Colors.blue,
-          },
-        ];
-      });
-    }
-  }
-
-  IconData _mapIcon(String iconName) {
-    switch (iconName) {
-      case 'emoji_events':
-        return Icons.emoji_events;
-      case 'star':
-        return Icons.star;
-      case 'school':
-        return Icons.school;
-      default:
-        return Icons.emoji_events;
-    }
-  }
-
-  Color _mapColor(String colorName) {
-    switch (colorName) {
-      case 'yellow':
-        return Colors.yellow;
-      case 'orange':
-        return Colors.orange;
-      case 'blue':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.blueAccent,
-              Colors.purpleAccent,
-            ],
+          image: DecorationImage(
+            image: AssetImage('assets/images/home/bgrhome2.png'),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.white70,
+              BlendMode.overlay,
+            ),
           ),
         ),
         child: SafeArea(
@@ -232,16 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : achievements.isEmpty
-                      ? const Center(
-                    child: Text(
-                      'Không có dữ liệu thành tựu',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  )
-                      : const AchievementCarousel(),
+                  const AchievementCarousel(),
                   const SizedBox(height: 20),
                   const MenuCarousel(),
                   const SizedBox(height: 20),
@@ -255,7 +171,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
                   const FeedbackCarousel(),
                   const SizedBox(height: 20),
-                  // Tùy chỉnh Container với shadow và bo góc
                   Container(
                     height: 300,
                     decoration: BoxDecoration(
@@ -333,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
         showSelectedLabels: true,
         showUnselectedLabels: true,
         onTap: _onItemTapped,
-        backgroundColor: Colors.white.withOpacity(0.9), // Nền mờ cho bottom bar
+        backgroundColor: Colors.white.withOpacity(0.9),
       ),
     );
   }
