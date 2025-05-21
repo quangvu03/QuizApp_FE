@@ -106,6 +106,31 @@ class TakeApi {
     }
   }
 
+  Future<int?> countTakesByQuizCreator(int idUser) async {
+    try {
+      var response = await http.get(
+        Uri.parse("${BaseUrl.url}/take/countTakesByQuizCreator?idUser=$idUser"),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data =
+        jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['result'] is int?) {
+          return data["result"];
+        } else {
+          print("Invalid response format");
+          return 0;
+        }
+      } else {
+        print("Lỗi khi lấy take: ${response.body}");
+        return 0;
+      }
+    } catch (e) {
+      print("Lỗi hệ thống: $e");
+      return 0;
+    }
+  }
+
 }
 
 

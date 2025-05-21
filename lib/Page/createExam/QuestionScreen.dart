@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/createExam/QuestionTypeDialog.dart';
 
 class QuestionScreen extends StatefulWidget {
   const QuestionScreen({super.key});
@@ -23,6 +24,8 @@ class _QuestionScreenState extends State<QuestionScreen> {
             backgroundColor: const Color(0xFF6A1B9A), // New header background color
             elevation: 0,
             expandedHeight: 100,
+            automaticallyImplyLeading: false, // Tắt mũi tên mặc định
+
             flexibleSpace: FlexibleSpaceBar(
               background: SafeArea(
                 child: Padding(
@@ -31,7 +34,9 @@ class _QuestionScreenState extends State<QuestionScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
                       ),
                       const Expanded(
                         child: Center(
@@ -165,6 +170,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                       ),
 
                       // Add question button
+                      // Add question button
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
@@ -178,7 +184,14 @@ class _QuestionScreenState extends State<QuestionScreen> {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () {},
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return const QuestionTypeDialog();
+                                },
+                              );
+                            },
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
                               width: double.infinity,

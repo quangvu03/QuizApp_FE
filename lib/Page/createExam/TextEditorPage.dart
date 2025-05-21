@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class TextEditorPage extends StatefulWidget {
-  const TextEditorPage({Key? key}) : super(key: key);
+  const TextEditorPage({Key? key, required String initialContent}) : super(key: key);
 
   @override
   State<TextEditorPage> createState() => _TextEditorPageState();
@@ -184,9 +184,9 @@ class _TextEditorPageState extends State<TextEditorPage> {
                             ),
                             // A̲ (A underline)
                             IconButton(
-                              icon: Stack(
+                              icon: const Stack(
                                 alignment: Alignment.center,
-                                children: const [
+                                children: [
                                   Text("A", style: TextStyle(fontSize: 18)),
                                   Positioned(
                                     bottom: 0,
@@ -213,12 +213,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
                               },
                             ),
                             // Numbered List
-                            IconButton(
-                              icon: const Icon(Icons.format_list_numbered),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút danh sách số
-                              },
-                            ),
+
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -226,6 +221,12 @@ class _TextEditorPageState extends State<TextEditorPage> {
                         // Hàng 3: Link, Image
                         Row(
                           children: [
+                            IconButton(
+                              icon: const Icon(Icons.format_list_numbered),
+                              onPressed: () {
+                                // Xử lý sự kiện khi nhấn nút danh sách số
+                              },
+                            ),
                             // Link
                             IconButton(
                               icon: const Icon(Icons.link),

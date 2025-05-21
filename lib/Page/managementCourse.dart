@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/createExam/createExam.dart';
 import 'package:quizapp_fe/Page/discoverCourse.dart';
 import 'package:quizapp_fe/Page/infor.dart';
+import 'package:quizapp_fe/entities/user.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
+import 'package:quizapp_fe/model/account_api.dart';
+import 'package:quizapp_fe/model/quiz_api.dart';
+import 'package:quizapp_fe/model/take_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class managementCourse extends StatefulWidget {
@@ -13,25 +17,27 @@ class managementCourse extends StatefulWidget {
 }
 
 class _managementCoursePageState extends State<managementCourse> {
-  int _selectedIndex = 0; // Bottom navigation index
-  int _selectedTabIndex = 0; // Navigation tabs index
+  int _selectedIndex = 0;
+  int _selectedTabIndex = 0;
   final ScrollController _scrollController = ScrollController();
   final ScrollController _tabScrollController =
-  ScrollController(); // Controller for tab scrolling
+  ScrollController();
 
-  // Global keys for each section to scroll to
   final GlobalKey _thongTinKey = GlobalKey();
   final GlobalKey _quanLyKey = GlobalKey();
   final GlobalKey _deThiMoiNhatKey = GlobalKey();
   final GlobalKey _danhMucDeThiKey = GlobalKey();
 
   String name = "Noname";
-  String imageUrl = "unknown.png";
+  String imageUrl = "unknownUser.png";
+  int _numberQuiz = 0;
+  int? countTakesByQuizCreator = 0;
+  int? _idUser;
 
   @override
   void initState() {
     super.initState();
-    _loadUsername();
+    _loadUser();
   }
 
   @override
@@ -66,20 +72,31 @@ class _managementCoursePageState extends State<managementCourse> {
     );
   }
 
-  Future<void> _loadUsername() async {
+  Future<void> _loadUser() async {
     final prefs = await SharedPreferences.getInstance();
     String? username = prefs.getString('username');
     String? avatar = prefs.getString('avatar_path');
     print('Loaded username: $username, avatar: $avatar');
+    QuizApiService quizApiService = QuizApiService();
+    AccountApi accountApi = AccountApi();
+    TakeApi takeApi = TakeApi();
+    User datausser = await accountApi.checkUsername(username!);
 
+    final data = await quizApiService.findAllbyUserId(datausser.id!);
+
+    final _countTakesByQuizCreator = await takeApi.countTakesByQuizCreator(datausser.id!);
+    print("object: ${data.length}");
     setState(() {
+      _idUser = datausser.id;
       name = username ?? "Noname";
-      imageUrl = avatar ?? "unknown.png";
+      imageUrl = avatar ?? "unknownUser.png";
+      _numberQuiz = data.length;
+      countTakesByQuizCreator = _countTakesByQuizCreator as int?;
     });
   }
 
   void _onItemTapped(int index) async {
-    if (index == 3) { // Index 3 corresponds to 'Tài khoản'
+    if (index == 3) {
       setState(() {
         _selectedIndex = 3;
       });
@@ -191,7 +208,7 @@ class _managementCoursePageState extends State<managementCourse> {
             label: 'Tài khoản',
           ),
         ],
-        currentIndex: _selectedIndex,
+        currentIndex: 3,
         selectedItemColor: Colors.pink,
         unselectedItemColor: Colors.grey,
         showSelectedLabels: true,
@@ -210,7 +227,7 @@ class _managementCoursePageState extends State<managementCourse> {
           CircleAvatar(
             radius: 30,
             backgroundColor: Colors.white,
-            child: imageUrl != "unknown.png"
+            child: imageUrl != "unknownUser.png"
                 ? ClipOval(
               child: Image.network(
                 "${BaseUrl.urlImage}/$imageUrl",
@@ -272,8 +289,8 @@ class _managementCoursePageState extends State<managementCourse> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatItem(Icons.remove_red_eye, '4', 'Lượt xem'),
-          _buildStatItem(Icons.check_circle_outline, '0', 'Lượt ôn thi'),
-          _buildStatItem(Icons.article_outlined, '0', 'Đề thi'),
+          _buildStatItem(Icons.check_circle_outline, '${countTakesByQuizCreator}', 'Lượt ôn thi'),
+          _buildStatItem(Icons.article_outlined, '$_numberQuiz', 'Đề thi'),
         ],
       ),
     );
@@ -309,7 +326,7 @@ class _managementCoursePageState extends State<managementCourse> {
       child: SingleChildScrollView(
         controller: _tabScrollController,
         scrollDirection: Axis.horizontal,
-        physics: const AlwaysScrollableScrollPhysics(), // Đảm bảo luôn cho phép vuốt
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -470,7 +487,7 @@ class _managementCoursePageState extends State<managementCourse> {
           const SizedBox(height: 16),
           _buildActionCard(
               Icons.lightbulb_outline, 'Tạo đề thi', Colors.orange, () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateExamScreen(),));
+            Navigator.push(context, MaterialPageRoute(builder: (context) =>  CreateExamScreen( _idUser),));
           }),
         ],
       ),
@@ -491,7 +508,7 @@ class _managementCoursePageState extends State<managementCourse> {
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             child: const ListTile(
               leading: CircleAvatar(
-                backgroundImage: NetworkImage('https://via.placeholder.com/40'),
+                backgroundImage: NetworkImage('https://images.prismic.io/quizlet-web/ZTcyN2EwOTgtYTMwYS00Yjg2LWEyOTEtZDMyMjNlNWVhM2Rj_c9d02594-613e-43a1-895e-bdfe2e956c87_group1534.png?auto=compress,format&rect=0,0,992,624&w=992&h=624'),
                 radius: 20,
               ),
               title: Text('ta1'),

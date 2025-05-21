@@ -97,14 +97,13 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       final pickedFile = await picker.pickImage(source: source);
       if (pickedFile != null) {
         File avatarFile = File(pickedFile.path);
-        // Upload ảnh lên server
         if (user?.userName != null) {
           final result = await accountApi.uploadAvatar(user!.userName!, avatarFile);
           if (result.containsKey('avatarUrl')) {
             setState(() {
-              _avatarUrl = result['avatarUrl']; // Cập nhật URL ảnh
+              _avatarUrl = result['avatarUrl'];
             });
-            await _saveAvatar(result['avatarUrl']); // Lưu vào SharedPreferences
+            await _saveAvatar(result['avatarUrl']);
             ToastHelper.showSuccess("Cập nhật ảnh đại diện thành công");
           } else {
             ToastHelper.showError(result['error'] ?? "Lỗi khi tải ảnh lên");

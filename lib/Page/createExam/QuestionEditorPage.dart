@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/createExam/TextEditorPage.dart';
 
 class QuestionEditorPage extends StatefulWidget {
   const QuestionEditorPage({Key? key}) : super(key: key);
@@ -9,10 +10,42 @@ class QuestionEditorPage extends StatefulWidget {
 
 class _QuestionEditorPageState extends State<QuestionEditorPage> {
   List<String> options = ["Đáp án 1"];
+  List<TextEditingController> optionControllers = [
+    TextEditingController(text: "Đáp án 1")
+  ];
+  TextEditingController questionController = TextEditingController();
+  TextEditingController explanationController = TextEditingController();
   int? selectedOption;
+  bool isProcessing = false;
+
+  @override
+  void dispose() {
+    for (var controller in optionControllers) {
+      controller.dispose();
+    }
+    questionController.dispose();
+    explanationController.dispose();
+    super.dispose();
+  }
+
+  void _syncLists() {
+    if (options.length != optionControllers.length) {
+      print("Warning: Lists out of sync! Syncing now...");
+      while (optionControllers.length > options.length) {
+        optionControllers.last.dispose();
+        optionControllers.removeLast();
+      }
+      while (optionControllers.length < options.length) {
+        optionControllers.add(
+            TextEditingController(text: options[optionControllers.length]));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    _syncLists();
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -26,7 +59,7 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
                     onPressed: () {
-                      // Xử lý sự kiện khi nhấn nút quay lại
+                      Navigator.pop(context);
                     },
                   ),
                   const Expanded(
@@ -39,7 +72,7 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48), // Để cân bằng với nút quay lại
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
@@ -69,8 +102,8 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                         ),
                         padding: const EdgeInsets.symmetric(
                             vertical: 16, horizontal: 16),
-                        child: Row(
-                          children: const [
+                        child: const Row(
+                          children: [
                             Icon(Icons.list_alt, size: 20),
                             SizedBox(width: 12),
                             Text(
@@ -91,20 +124,42 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: const TextField(
-                          decoration: InputDecoration(
-                            hintText: "Nhập nội dung câu hỏi",
-                            hintStyle: TextStyle(color: Colors.grey),
-                            border: InputBorder.none,
+                      GestureDetector(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TextEditorPage(
+                                initialContent: questionController.text,
+                              ),
+                            ),
+                          );
+                          if (result != null) {
+                            setState(() {
+                              questionController.text = result;
+                            });
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          maxLines: 2,
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            questionController.text.isEmpty
+                                ? "Nhập nội dung câu hỏi"
+                                : questionController.text,
+                            style: TextStyle(
+                              color: questionController.text.isEmpty
+                                  ? Colors.grey
+                                  : Colors.black,
+                              fontSize: 16,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -118,13 +173,14 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-
-                      // Danh sách đáp án
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: options.length,
                         itemBuilder: (context, index) {
+                          if (index >= optionControllers.length) {
+                            return const SizedBox.shrink();
+                          }
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: Row(
@@ -140,38 +196,69 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                   },
                                 ),
                                 Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Colors.grey.shade300),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16),
-                                    child: TextField(
-                                      decoration: InputDecoration(
-                                        hintText: "Nhập nội dung câu trả lời",
-                                        hintStyle:
-                                        const TextStyle(color: Colors.grey),
-                                        border: InputBorder.none,
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      final result = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => TextEditorPage(
+                                            initialContent:
+                                            optionControllers[index].text,
+                                          ),
+                                        ),
+                                      );
+                                      if (result != null) {
+                                        setState(() {
+                                          optionControllers[index].text = result;
+                                          options[index] = result;
+                                        });
+                                      }
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                            color: Colors.grey.shade300),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                      controller: TextEditingController(
-                                          text: options[index]),
-                                      onChanged: (value) {
-                                        options[index] = value;
-                                      },
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 16),
+                                      child: Text(
+                                        optionControllers[index].text.isEmpty
+                                            ? "Nhập nội dung câu trả lời"
+                                            : optionControllers[index].text,
+                                        style: TextStyle(
+                                          color: optionControllers[index]
+                                              .text.isEmpty
+                                              ? Colors.grey
+                                              : Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ),
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline,
                                       color: Colors.red),
-                                  onPressed: () {
-                                    if (options.length > 1) {
-                                      setState(() {
-                                        options.removeAt(index);
-                                      });
-                                    }
+                                  onPressed: isProcessing || options.length <= 1
+                                      ? null
+                                      : () {
+                                    setState(() {
+                                      isProcessing = true;
+                                      options.removeAt(index);
+                                      optionControllers[index].dispose();
+                                      optionControllers.removeAt(index);
+                                      if (selectedOption == index) {
+                                        selectedOption = null;
+                                      } else if (selectedOption != null &&
+                                          selectedOption! > index) {
+                                        selectedOption =
+                                            selectedOption! - 1;
+                                      }
+                                      isProcessing = false;
+                                    });
                                   },
                                 ),
                               ],
@@ -189,9 +276,15 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                             "Thêm đáp án",
                             style: TextStyle(color: Colors.blue),
                           ),
-                          onPressed: () {
+                          onPressed: isProcessing
+                              ? null
+                              : () {
                             setState(() {
+                              isProcessing = true;
                               options.add("Đáp án ${options.length + 1}");
+                              optionControllers.add(TextEditingController(
+                                  text: "Đáp án ${options.length}"));
+                              isProcessing = false;
                             });
                           },
                           style: ElevatedButton.styleFrom(
@@ -216,21 +309,42 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: const TextField(
-                          decoration: InputDecoration(
-                            hintText:
-                            "Nhập nội dung giải thích cho câu hỏi này",
-                            hintStyle: TextStyle(color: Colors.grey),
-                            border: InputBorder.none,
+                      GestureDetector(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TextEditorPage(
+                                initialContent: explanationController.text,
+                              ),
+                            ),
+                          );
+                          if (result != null) {
+                            setState(() {
+                              explanationController.text = result;
+                            });
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          maxLines: 3,
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            explanationController.text.isEmpty
+                                ? "Nhập nội dung giải thích cho câu hỏi này"
+                                : explanationController.text,
+                            style: TextStyle(
+                              color: explanationController.text.isEmpty
+                                  ? Colors.grey
+                                  : Colors.black,
+                              fontSize: 16,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ],
@@ -244,6 +358,36 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
+                onPressed: () {
+                  if (questionController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Vui lòng nhập nội dung câu hỏi")),
+                    );
+                    return;
+                  }
+                  if (selectedOption == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Vui lòng chọn một đáp án đúng")),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, {
+                    'question': questionController.text,
+                    'options': options,
+                    'correctOption': selectedOption,
+                    'explanation': explanationController.text,
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A5AE0),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
                 child: const Text(
                   "Lưu",
                   style: TextStyle(
@@ -251,16 +395,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  overlayColor: const Color(0xFF6A5AE0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                onPressed: () {
-                  // Xử lý sự kiện khi nhấn nút Lưu
-                },
               ),
             ),
           ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/createExam/QuestionEditorPage.dart';
 
 class QuestionTypeDialog extends StatefulWidget {
   const QuestionTypeDialog({super.key});
@@ -174,7 +175,7 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => QuestionEditorPage(),));
                   },
                   child: const Text(
                     'Xác nhận',
