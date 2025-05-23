@@ -1,287 +1,193 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:markdown_quill/markdown_quill.dart';
+import 'package:markdown/markdown.dart' as md;
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class TextEditorPage extends StatefulWidget {
-  const TextEditorPage({Key? key, required String initialContent}) : super(key: key);
+  final String? initialContent; // Nhận Delta JSON dưới dạng chuỗi
+
+  const TextEditorPage({super.key, this.initialContent});
 
   @override
   State<TextEditorPage> createState() => _TextEditorPageState();
 }
 
 class _TextEditorPageState extends State<TextEditorPage> {
-  final TextEditingController _textController = TextEditingController();
-  bool isBold = false;
-  bool isItalic = false;
-  bool isUnderline = false;
+  late QuillController _controller;
+  final FocusNode _focusNode = FocusNode();
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+
+    late Document doc;
+
+    if (widget.initialContent != null && widget.initialContent!.isNotEmpty) {
+      try {
+        // Phân tích Delta JSON nếu có
+        final deltaJson = jsonDecode(widget.initialContent!);
+        doc = Document.fromJson(deltaJson);
+      } catch (e) {
+        // Nếu JSON không hợp lệ, dùng văn bản thuần
+        doc = Document();
+        doc.insert(0, widget.initialContent!);
+      }
+    } else {
+      doc = Document();
+    }
+
+    _controller = QuillController(
+      document: doc,
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_focusNode);
+    });
+  }
 
   @override
   void dispose() {
-    _textController.dispose();
+    _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndCropImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      final CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressQuality: 100,
+        maxWidth: 700,
+        maxHeight: 700,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Cắt ảnh',
+            toolbarColor: Colors.blue,
+            toolbarWidgetColor: Colors.white,
+            lockAspectRatio: false,
+          ),
+          IOSUiSettings(
+            title: 'Cắt ảnh',
+            cancelButtonTitle: 'Hủy',
+            doneButtonTitle: 'Xong',
+          ),
+        ],
+      );
+
+      if (croppedFile != null) {
+        final bytes = await File(croppedFile.path).readAsBytes();
+        final base64Image = base64Encode(bytes);
+        final imageUrl = 'data:image/jpeg;base64,$base64Image';
+
+        final index = _controller.selection.baseOffset;
+        _controller.document.insert(index, BlockEmbed.image(imageUrl));
+        _controller.updateSelection(
+          TextSelection.collapsed(offset: index + 1),
+          ChangeSource.local,
+        );
+      }
+    }
+  }
+
+  void _saveAndReturn() {
+    // Trả về Delta JSON trực tiếp từ document
+    final deltaJson = jsonEncode(_controller.document.toDelta().toJson());
+    print("detal: " +deltaJson);
+    Navigator.pop(context, deltaJson);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Soạn thảo văn bản'),
+        centerTitle: true,
+        automaticallyImplyLeading: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveAndReturn,
+          ),
+        ],
+      ),
       body: Column(
         children: [
-          // Header với nút quay lại và xác nhận
-          Container(
-            padding:
-            const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 8),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFCFBEFF), Color(0xFFBFB0F5)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.all(10.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-                  onPressed: () {
-                    // Xử lý sự kiện khi nhấn nút quay lại
-                  },
-                ),
-                const Text(
-                  "Nhập nội dung",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                ElevatedButton.icon(
+                  onPressed: _saveAndReturn, // Lưu và trả về Delta JSON
+                  label: const Text("Lưu"),
+                  icon: const Icon(Icons.save),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 3,
+                    visualDensity: VisualDensity.compact,
                   ),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: () {
-                    // Xử lý sự kiện khi nhấn nút xác nhận
+                    _controller.document = Document();
+                    _controller.updateSelection(
+                      const TextSelection.collapsed(offset: 0),
+                      ChangeSource.local,
+                    );
                   },
-                  child: const Text("Xác nhận"),
+                  label: const Text("reset"),
+                  icon: const Icon(Icons.import_export_rounded),
+                  // ...
+                ),
+                ElevatedButton.icon(
+                  onPressed: _pickAndCropImage,
+                  label: const Text("Chèn ảnh"),
+                  icon: const Icon(Icons.image),
                   style: ElevatedButton.styleFrom(
-                    overlayColor: const Color(0xFF5E5CE6),
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    elevation: 3,
+                    visualDensity: VisualDensity.compact,
                   ),
                 ),
               ],
             ),
           ),
-
-          // Phần soạn thảo
+          const SizedBox(height: 10),
+          QuillToolbar.simple(
+            configurations: QuillSimpleToolbarConfigurations(
+              controller: _controller,
+              multiRowsDisplay: true,
+            ),
+          ),
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.grey.shade200),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              margin: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Thanh công cụ định dạng
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        // Hàng 1: Normal, Bold, Italic, Underline
-                        Row(
-                          children: [
-                            // Dropdown Normal
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                children: const [
-                                  Text(
-                                    "Normal",
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_drop_down),
-                                ],
-                              ),
-                            ),
-                            const Spacer(),
-                            // Bold
-                            IconButton(
-                              icon: const Icon(Icons.format_bold),
-                              onPressed: () {
-                                setState(() {
-                                  isBold = !isBold;
-                                });
-                              },
-                              color: isBold
-                                  ? const Color(0xFF5E5CE6)
-                                  : Colors.black,
-                            ),
-                            // Italic
-                            IconButton(
-                              icon: const Icon(Icons.format_italic),
-                              onPressed: () {
-                                setState(() {
-                                  isItalic = !isItalic;
-                                });
-                              },
-                              color: isItalic
-                                  ? const Color(0xFF5E5CE6)
-                                  : Colors.black,
-                            ),
-                            // Underline
-                            IconButton(
-                              icon: const Icon(Icons.format_underline),
-                              onPressed: () {
-                                setState(() {
-                                  isUnderline = !isUnderline;
-                                });
-                              },
-                              color: isUnderline
-                                  ? const Color(0xFF5E5CE6)
-                                  : Colors.black,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Hàng 2: Division, X², X₂, A̲, Format, Bullet, Numbered List
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // Division
-                            IconButton(
-                              icon: const Text("÷",
-                                  style: TextStyle(fontSize: 24)),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút phép chia
-                              },
-                            ),
-                            // X²
-                            IconButton(
-                              icon: const Text("X²",
-                                  style: TextStyle(fontSize: 18)),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút bình phương
-                              },
-                            ),
-                            // X₂
-                            IconButton(
-                              icon: const Text("X₂",
-                                  style: TextStyle(fontSize: 18)),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút chỉ số dưới
-                              },
-                            ),
-                            // A̲ (A underline)
-                            IconButton(
-                              icon: const Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Text("A", style: TextStyle(fontSize: 18)),
-                                  Positioned(
-                                    bottom: 0,
-                                    child: Icon(Icons.minimize, size: 14),
-                                  ),
-                                ],
-                              ),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút gạch chân chữ
-                              },
-                            ),
-                            // Highlight
-                            IconButton(
-                              icon: const Icon(Icons.format_color_fill),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút tô màu
-                              },
-                            ),
-                            // Bullet List
-                            IconButton(
-                              icon: const Icon(Icons.format_list_bulleted),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút danh sách dấu chấm
-                              },
-                            ),
-                            // Numbered List
-
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Hàng 3: Link, Image
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.format_list_numbered),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút danh sách số
-                              },
-                            ),
-                            // Link
-                            IconButton(
-                              icon: const Icon(Icons.link),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút chèn liên kết
-                              },
-                            ),
-                            // Image
-                            IconButton(
-                              icon: const Icon(Icons.image),
-                              onPressed: () {
-                                // Xử lý sự kiện khi nhấn nút chèn hình ảnh
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Vùng soạn thảo văn bản
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      maxLines: null,
-                      expands: true,
-                      style: TextStyle(
-                        fontWeight:
-                        isBold ? FontWeight.bold : FontWeight.normal,
-                        fontStyle:
-                        isItalic ? FontStyle.italic : FontStyle.normal,
-                        decoration: isUnderline
-                            ? TextDecoration.underline
-                            : TextDecoration.none,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: "Nhập nội dung",
-                        hintStyle: TextStyle(color: Colors.grey),
-                        contentPadding: EdgeInsets.all(16),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-
-                  // Indicator ở cuối trang (dấu gạch ngang)
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    height: 4,
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ],
+            child: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: QuillEditor.basic(
+                configurations: QuillEditorConfigurations(
+                  controller: _controller,
+                  autoFocus: false,
+                  scrollable: true,
+                  padding: EdgeInsets.zero,
+                  expands: true,
+                ),
+                scrollController: ScrollController(),
+                focusNode: _focusNode,
               ),
             ),
           ),

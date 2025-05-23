@@ -6,6 +6,7 @@ version: 1.0.0+1
 environment:
   sdk: ^3.5.2
 
+
 dependencies:
   flutter:
     sdk: flutter
@@ -25,7 +26,10 @@ dependencies:
   permission_handler: ^10.2.0
   http_parser: ^4.0.2
   google_fonts: ^6.2.1
-  flutter_quill: ^9.2.1  # Phiên bản mới nhất tại thời điểm hiện tại
+  flutter_quill: ^9.2.3
+  markdown_quill: ^3.0.1
+  image_cropper: ^8.0.2
+
 
 flutter_native_splash:
   color: "#ffffff"
@@ -36,9 +40,9 @@ flutter_native_splash:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: 5.0.0
   flutter_launcher_icons: ^0.13.1
-  shared_preferences: ^2.2.2
+  build_runner: ^2.4.11
 
 flutter_launcher_icons:
   android: true

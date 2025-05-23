@@ -29,6 +29,7 @@ class TakeApi {
       return null;
     }
   }
+
   Future<Take?> findById(int id) async {
     try {
       var response = await http.get(

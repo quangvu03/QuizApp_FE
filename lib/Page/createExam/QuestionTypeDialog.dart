@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/createExam/QuestionEditorPage.dart';
 
 class QuestionTypeDialog extends StatefulWidget {
-  const QuestionTypeDialog({super.key});
+  final Map<String, dynamic>? dataQuiz; // Nhận dataQuiz từ QuestionScreen
+
+  const QuestionTypeDialog({super.key, this.dataQuiz});
 
   @override
   State<QuestionTypeDialog> createState() => _QuestionTypeDialogState();
 }
 
 class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
-  int selectedAnswerIndex = 2; // Mặc định chọn đáp án thứ ba (index 2)
+  int? selectedAnswerIndex; // Dùng cho "1 đáp án" và "True/False"
+  List<int> selectedAnswerIndices = []; // Dùng cho "Nhiều đáp án"
+  String selectedQuestionType = '1 đáp án'; // Loại câu hỏi mặc định
 
   @override
   Widget build(BuildContext context) {
@@ -17,25 +21,21 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      insetPadding: const EdgeInsets.only(top: 50), // Padding tối đa phía trên
+      insetPadding: const EdgeInsets.only(top: 50),
       child: Container(
         width: double.infinity,
-        constraints:
-        const BoxConstraints(maxWidth: 600), // Giới hạn chiều rộng tối đa
+        constraints: const BoxConstraints(maxWidth: 600),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Nội dung cuộn
             Flexible(
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      16, 24, 16, 0), // Padding tối đa cho nội dung
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Tiêu đề và nút đóng
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -55,8 +55,6 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                         ],
                       ),
                       const SizedBox(height: 24),
-
-                      // Nhãn loại câu hỏi
                       const Text(
                         'Loại câu hỏi',
                         style: TextStyle(
@@ -65,8 +63,6 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                         ),
                       ),
                       const SizedBox(height: 8),
-
-                      // Dropdown
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
@@ -77,9 +73,9 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             isExpanded: true,
-                            value: '1 đáp án',
+                            value: selectedQuestionType,
                             icon: const Icon(Icons.arrow_drop_down),
-                            items: ['1 đáp án']
+                            items: ['1 đáp án', 'Nhiều đáp án', 'True/False']
                                 .map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
@@ -92,23 +88,33 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                                 ),
                               );
                             }).toList(),
-                            onChanged: (String? newValue) {},
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  selectedQuestionType = newValue;
+                                  // Reset trạng thái chọn khi thay đổi loại câu hỏi
+                                  selectedAnswerIndex = null;
+                                  selectedAnswerIndices = [];
+                                  if (newValue == 'True/False') {
+                                    selectedAnswerIndex = 0; // Mặc định chọn "Đúng"
+                                  } else if (newValue == '1 đáp án') {
+                                    selectedAnswerIndex = 2; // Mặc định chọn đáp án thứ 3
+                                  }
+                                });
+                              }
+                            },
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Mô tả
-                      const Text(
-                        'Cho phép tạo câu hỏi có nhiều câu trả lời và chỉ được chọn 1 đáp án đúng',
-                        style: TextStyle(
+                      Text(
+                        _getDescription(selectedQuestionType),
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.black54,
                         ),
                       ),
                       const SizedBox(height: 32),
-
-                      // Phần xem trước
                       const Text(
                         'Xem trước',
                         style: TextStyle(
@@ -117,8 +123,6 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Container xem trước
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -129,40 +133,17 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Câu hỏi
-                            const Text(
-                              'Chọn câu trả lời đúng: Triết học ra đời ở đâu?',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Các đáp án
-                            _buildAnswerOption(0, 'Chỉ ở phương Đông'),
-                            const SizedBox(height: 8),
-                            _buildAnswerOption(1, 'Chỉ ở phương Tây'),
-                            const SizedBox(height: 8),
-                            _buildAnswerOption(
-                                2, 'Cả phương Đông và phương Tây'),
-                            const SizedBox(height: 8),
-                            _buildAnswerOption(
-                                3, 'Cả 3 đáp án còn lại đều sai'),
-                          ],
+                          children: _buildPreviewContent(),
                         ),
                       ),
-                      const SizedBox(height: 24), // Khoảng cách trước nút
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
               ),
             ),
-            // Nút xác nhận cố định
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  16, 0, 16, 24), // Padding tối đa cho nút
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -175,7 +156,16 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => QuestionEditorPage(),));
+                    // Truyền dataQuiz và selectedQuestionType sang QuestionEditorPage
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QuestionEditorPage(
+                          dataQuiz: widget.dataQuiz,
+                          questionType: selectedQuestionType,
+                        ),
+                      ),
+                    );
                   },
                   child: const Text(
                     'Xác nhận',
@@ -193,13 +183,77 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
     );
   }
 
+  // Phương thức hỗ trợ lấy mô tả dựa trên loại câu hỏi
+  String _getDescription(String questionType) {
+    switch (questionType) {
+      case '1 đáp án':
+        return 'Cho phép tạo câu hỏi có nhiều câu trả lời và chỉ được chọn 1 đáp án đúng';
+      case 'Nhiều đáp án':
+        return 'Cho phép tạo câu hỏi có nhiều câu trả lời và có thể chọn nhiều đáp án đúng';
+      case 'True/False':
+        return 'Cho phép tạo câu hỏi với hai đáp án: Đúng hoặc Sai';
+      default:
+        return '';
+    }
+  }
+
+  // Phương thức hỗ trợ xây dựng nội dung xem trước dựa trên loại câu hỏi
+  List<Widget> _buildPreviewContent() {
+    if (selectedQuestionType == 'True/False') {
+      return [
+        const Text(
+          'Câu hỏi: Triết học ra đời ở Hy Lạp cổ đại?',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildAnswerOption(0, 'Đúng'),
+        const SizedBox(height: 8),
+        _buildAnswerOption(1, 'Sai'),
+      ];
+    } else {
+      return [
+        const Text(
+          'Chọn câu trả lời đúng: Triết học ra đời ở đâu?',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildAnswerOption(0, 'Chỉ ở phương Đông'),
+        const SizedBox(height: 8),
+        _buildAnswerOption(1, 'Chỉ ở phương Tây'),
+        const SizedBox(height: 8),
+        _buildAnswerOption(2, 'Cả phương Đông và phương Tây'),
+        const SizedBox(height: 8),
+        _buildAnswerOption(3, 'Cả 3 đáp án còn lại đều sai'),
+      ];
+    }
+  }
+
   Widget _buildAnswerOption(int index, String text) {
-    final bool isSelected = selectedAnswerIndex == index;
+    final bool isSelected = selectedQuestionType == 'Nhiều đáp án'
+        ? selectedAnswerIndices.contains(index)
+        : selectedAnswerIndex == index;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          selectedAnswerIndex = index;
+          if (selectedQuestionType == 'Nhiều đáp án') {
+            // Chọn hoặc bỏ chọn nhiều đáp án
+            if (selectedAnswerIndices.contains(index)) {
+              selectedAnswerIndices.remove(index);
+            } else {
+              selectedAnswerIndices.add(index);
+            }
+          } else {
+            // Chọn một đáp án duy nhất cho "1 đáp án" hoặc "True/False"
+            selectedAnswerIndex = index;
+            selectedAnswerIndices = []; // Đảm bảo danh sách rỗng
+          }
         });
       },
       child: Container(
@@ -214,18 +268,34 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: isSelected ? null : Border.all(color: Colors.grey),
-                color: isSelected ? Colors.green : Colors.white,
+            // Hiển thị Checkbox cho "Nhiều đáp án", Radio cho "1 đáp án" và "True/False"
+            if (selectedQuestionType == 'Nhiều đáp án')
+              Checkbox(
+                value: selectedAnswerIndices.contains(index),
+                onChanged: (bool? value) {
+                  setState(() {
+                    if (value == true) {
+                      selectedAnswerIndices.add(index);
+                    } else {
+                      selectedAnswerIndices.remove(index);
+                    }
+                  });
+                },
+                activeColor: Colors.green,
+                checkColor: Colors.white,
+              )
+            else
+              Radio<int>(
+                value: index,
+                groupValue: selectedAnswerIndex,
+                onChanged: (int? value) {
+                  setState(() {
+                    selectedAnswerIndex = value;
+                    selectedAnswerIndices = []; // Đảm bảo danh sách rỗng
+                  });
+                },
+                activeColor: Colors.green,
               ),
-              child: isSelected
-                  ? const Icon(Icons.check, color: Colors.white, size: 16)
-                  : null,
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

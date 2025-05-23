@@ -2,13 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/createExam/QuestionTypeDialog.dart';
 
 class QuestionScreen extends StatefulWidget {
-  const QuestionScreen({super.key});
+
+  final Map<String, dynamic>? dataQuiz;
+
+
+  const QuestionScreen({super.key, required this.dataQuiz});
 
   @override
   State<QuestionScreen> createState() => _QuestionScreenState();
 }
 
 class _QuestionScreenState extends State<QuestionScreen> {
+
+  Map<String, dynamic>? _dataQuiz;
+
+  @override
+  void initState() {
+    _dataQuiz = widget.dataQuiz;
+  }
+
   final String examName = "Phần 1";
   final String status = "Hoạt động";
   int selectedPage = 1;
@@ -24,7 +36,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
             backgroundColor: const Color(0xFF6A1B9A), // New header background color
             elevation: 0,
             expandedHeight: 100,
-            automaticallyImplyLeading: false, // Tắt mũi tên mặc định
+            automaticallyImplyLeading: false,
 
             flexibleSpace: FlexibleSpaceBar(
               background: SafeArea(
@@ -140,12 +152,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
-                // Wave shape
-
-                // Content section
                 Container(
                   color: Colors.white,
                   child: Column(
@@ -168,9 +175,6 @@ class _QuestionScreenState extends State<QuestionScreen> {
                           ],
                         ),
                       ),
-
-                      // Add question button
-                      // Add question button
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
@@ -188,7 +192,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                               showDialog(
                                 context: context,
                                 builder: (BuildContext context) {
-                                  return const QuestionTypeDialog();
+                                  return QuestionTypeDialog();
                                 },
                               );
                             },
@@ -273,6 +277,8 @@ class _QuestionScreenState extends State<QuestionScreen> {
       ),
     );
   }
+
+
 }
 
 // Custom clipper for the wave shape

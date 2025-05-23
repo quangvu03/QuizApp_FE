@@ -1,22 +1,70 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:quizapp_fe/Page/createExam/TextEditorPage.dart';
+import 'package:quizapp_fe/model/quiz_api.dart'; // Giả sử bạn có QuizApiService
 
 class QuestionEditorPage extends StatefulWidget {
-  const QuestionEditorPage({Key? key}) : super(key: key);
+  final Map<String, dynamic>? dataQuiz;
+  final String questionType;
+
+  const QuestionEditorPage({
+    Key? key,
+    required this.dataQuiz,
+    required this.questionType,
+  }) : super(key: key);
 
   @override
   State<QuestionEditorPage> createState() => _QuestionEditorPageState();
 }
 
 class _QuestionEditorPageState extends State<QuestionEditorPage> {
-  List<String> options = ["Đáp án 1"];
-  List<TextEditingController> optionControllers = [
-    TextEditingController(text: "Đáp án 1")
-  ];
-  TextEditingController questionController = TextEditingController();
-  TextEditingController explanationController = TextEditingController();
-  int? selectedOption;
+  List<String> options = []; // Lưu Delta JSON cho các đáp án
+  List<QuillController> optionControllers = [];
+  QuillController questionController = QuillController(
+    document: Document(),
+    selection: const TextSelection.collapsed(offset: 0),
+  );
+  QuillController explanationController = QuillController(
+    document: Document(),
+    selection: const TextSelection.collapsed(offset: 0),
+  );
+  int? selectedOption; // Dùng cho "1 đáp án"
+  List<int> selectedOptions = []; // Dùng cho "Nhiều đáp án"
+  bool? selectedTrueFalse; // Dùng cho "True/False"
   bool isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Khởi tạo danh sách đáp án dựa trên loại câu hỏi
+    if (widget.questionType == 'True/False') {
+      options = [
+        jsonEncode((Document()..insert(0, 'Đúng')).toDelta().toJson()),
+        jsonEncode((Document()..insert(0, 'Sai')).toDelta().toJson()),
+      ];
+      optionControllers = [
+        QuillController(
+          document: Document()..insert(0, 'Đúng'),
+          selection: const TextSelection.collapsed(offset: 0),
+        ),
+        QuillController(
+          document: Document()..insert(0, 'Sai'),
+          selection: const TextSelection.collapsed(offset: 0),
+        ),
+      ];
+    } else {
+      options = [
+        jsonEncode((Document()..insert(0, 'Đáp án 1')).toDelta().toJson()),
+      ];
+      optionControllers = [
+        QuillController(
+          document: Document()..insert(0, 'Đáp án 1'),
+          selection: const TextSelection.collapsed(offset: 0),
+        ),
+      ];
+    }
+  }
 
   @override
   void dispose() {
@@ -30,14 +78,29 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
 
   void _syncLists() {
     if (options.length != optionControllers.length) {
-      print("Warning: Lists out of sync! Syncing now...");
+      print("Cảnh báo: Danh sách không đồng bộ! Đang đồng bộ...");
       while (optionControllers.length > options.length) {
         optionControllers.last.dispose();
         optionControllers.removeLast();
       }
       while (optionControllers.length < options.length) {
-        optionControllers.add(
-            TextEditingController(text: options[optionControllers.length]));
+        try {
+          final deltaJson = jsonDecode(options[optionControllers.length]);
+          optionControllers.add(
+            QuillController(
+              document: Document.fromJson(deltaJson),
+              selection: const TextSelection.collapsed(offset: 0),
+            ),
+          );
+        } catch (e) {
+          print("Lỗi đồng bộ: $e");
+          optionControllers.add(
+            QuillController(
+              document: Document()..insert(0, options[optionControllers.length]),
+              selection: const TextSelection.collapsed(offset: 0),
+            ),
+          );
+        }
       }
     }
   }
@@ -62,11 +125,11 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                       Navigator.pop(context);
                     },
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      "Chỉnh sửa câu hỏi",
+                      "Chỉnh sửa câu hỏi - ${widget.questionType}",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -102,13 +165,13 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                         ),
                         padding: const EdgeInsets.symmetric(
                             vertical: 16, horizontal: 16),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(Icons.list_alt, size: 20),
-                            SizedBox(width: 12),
+                            const Icon(Icons.list_alt, size: 20),
+                            const SizedBox(width: 12),
                             Text(
-                              "1 đáp án",
-                              style: TextStyle(fontSize: 16),
+                              widget.questionType,
+                              style: const TextStyle(fontSize: 16),
                             ),
                           ],
                         ),
@@ -126,17 +189,33 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                       const SizedBox(height: 8),
                       GestureDetector(
                         onTap: () async {
+                          final initialContent = jsonEncode(
+                              questionController.document.toDelta().toJson());
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => TextEditorPage(
-                                initialContent: questionController.text,
+                                initialContent: initialContent,
                               ),
                             ),
                           );
                           if (result != null) {
                             setState(() {
-                              questionController.text = result;
+                              try {
+                                final deltaJson = jsonDecode(result);
+                                questionController = QuillController(
+                                  document: Document.fromJson(deltaJson),
+                                  selection:
+                                  const TextSelection.collapsed(offset: 0),
+                                );
+                              } catch (e) {
+                                print("Lỗi xử lý câu hỏi: $e");
+                                questionController = QuillController(
+                                  document: Document()..insert(0, result),
+                                  selection:
+                                  const TextSelection.collapsed(offset: 0),
+                                );
+                              }
                             });
                           }
                         },
@@ -147,18 +226,16 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           padding: const EdgeInsets.all(16),
-                          child: Text(
-                            questionController.text.isEmpty
-                                ? "Nhập nội dung câu hỏi"
-                                : questionController.text,
-                            style: TextStyle(
-                              color: questionController.text.isEmpty
-                                  ? Colors.grey
-                                  : Colors.black,
-                              fontSize: 16,
+                          child: QuillEditor.basic(
+                            configurations: QuillEditorConfigurations(
+                              controller: questionController,
+                              autoFocus: false,
+                              enableInteractiveSelection: false,
+                              scrollable: false,
+                              padding: EdgeInsets.zero,
+                              expands: false,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            scrollController: ScrollController(),
                           ),
                         ),
                       ),
@@ -183,83 +260,134 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                           }
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Radio<int>(
-                                  value: index,
-                                  groupValue: selectedOption,
-                                  onChanged: (int? value) {
-                                    setState(() {
-                                      selectedOption = value;
-                                    });
-                                  },
+                                // Phần chọn đáp án, nhãn và nút xóa
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    if (widget.questionType == '1 đáp án')
+                                      Radio<int>(
+                                        value: index,
+                                        groupValue: selectedOption,
+                                        onChanged: (int? value) {
+                                          setState(() {
+                                            selectedOption = value;
+                                          });
+                                        },
+                                      ),
+                                    if (widget.questionType == 'Nhiều đáp án')
+                                      Checkbox(
+                                        value: selectedOptions.contains(index),
+                                        onChanged: (bool? value) {
+                                          setState(() {
+                                            if (value == true) {
+                                              selectedOptions.add(index);
+                                            } else {
+                                              selectedOptions.remove(index);
+                                            }
+                                          });
+                                        },
+                                      ),
+                                    if (widget.questionType == 'True/False')
+                                      Radio<bool>(
+                                        value: index == 0,
+                                        groupValue: selectedTrueFalse,
+                                        onChanged: (bool? value) {
+                                          setState(() {
+                                            selectedTrueFalse = value;
+                                          });
+                                        },
+                                      ),
+                                    Text(
+                                      'Đáp án ${index + 1}', // Nhãn động bắt đầu từ "Đáp án 1"
+                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    ),
+                                    const Spacer(), // Đẩy nút xóa sang bên phải
+                                    if (widget.questionType != 'True/False')
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                        onPressed: isProcessing || options.length <= 1
+                                            ? null
+                                            : () {
+                                          setState(() {
+                                            isProcessing = true;
+                                            options.removeAt(index);
+                                            optionControllers[index].dispose();
+                                            optionControllers.removeAt(index);
+                                            if (widget.questionType == '1 đáp án') {
+                                              if (selectedOption == index) {
+                                                selectedOption = null;
+                                              } else if (selectedOption != null &&
+                                                  selectedOption! > index) {
+                                                selectedOption = selectedOption! - 1;
+                                              }
+                                            } else if (widget.questionType == 'Nhiều đáp án') {
+                                              selectedOptions.remove(index);
+                                              selectedOptions = selectedOptions
+                                                  .map((i) => i > index ? i - 1 : i)
+                                                  .toList();
+                                            }
+                                            isProcessing = false;
+                                          });
+                                        },
+                                      ),
+                                  ],
                                 ),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () async {
-                                      final result = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => TextEditorPage(
-                                            initialContent:
-                                            optionControllers[index].text,
-                                          ),
+                                // Ô nhập văn bản
+                                GestureDetector(
+                                  onTap: () async {
+                                    final initialContent = jsonEncode(
+                                        optionControllers[index].document.toDelta().toJson());
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TextEditorPage(
+                                          initialContent: initialContent,
                                         ),
-                                      );
-                                      if (result != null) {
-                                        setState(() {
-                                          optionControllers[index].text = result;
+                                      ),
+                                    );
+                                    if (result != null) {
+                                      setState(() {
+                                        try {
+                                          final deltaJson = jsonDecode(result);
                                           options[index] = result;
-                                        });
-                                      }
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                            color: Colors.grey.shade300),
-                                        borderRadius: BorderRadius.circular(8),
+                                          optionControllers[index] = QuillController(
+                                            document: Document.fromJson(deltaJson),
+                                            selection: const TextSelection.collapsed(offset: 0),
+                                          );
+                                        } catch (e) {
+                                          print("Lỗi xử lý đáp án $index: $e");
+                                          options[index] = jsonEncode(
+                                            (Document()..insert(0, result)).toDelta().toJson(),
+                                          );
+                                          optionControllers[index] = QuillController(
+                                            document: Document()..insert(0, result),
+                                            selection: const TextSelection.collapsed(offset: 0),
+                                          );
+                                        }
+                                      });
+                                    }
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey.shade300),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                    child: QuillEditor.basic(
+                                      configurations: QuillEditorConfigurations(
+                                        controller: optionControllers[index],
+                                        autoFocus: false,
+                                        enableInteractiveSelection: false,
+                                        scrollable: false,
+                                        padding: EdgeInsets.zero,
+                                        expands: false,
                                       ),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 16),
-                                      child: Text(
-                                        optionControllers[index].text.isEmpty
-                                            ? "Nhập nội dung câu trả lời"
-                                            : optionControllers[index].text,
-                                        style: TextStyle(
-                                          color: optionControllers[index]
-                                              .text.isEmpty
-                                              ? Colors.grey
-                                              : Colors.black,
-                                          fontSize: 16,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                      scrollController: ScrollController(),
                                     ),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline,
-                                      color: Colors.red),
-                                  onPressed: isProcessing || options.length <= 1
-                                      ? null
-                                      : () {
-                                    setState(() {
-                                      isProcessing = true;
-                                      options.removeAt(index);
-                                      optionControllers[index].dispose();
-                                      optionControllers.removeAt(index);
-                                      if (selectedOption == index) {
-                                        selectedOption = null;
-                                      } else if (selectedOption != null &&
-                                          selectedOption! > index) {
-                                        selectedOption =
-                                            selectedOption! - 1;
-                                      }
-                                      isProcessing = false;
-                                    });
-                                  },
                                 ),
                               ],
                             ),
@@ -268,36 +396,48 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                       ),
 
                       // Nút thêm đáp án
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.add, color: Colors.blue),
-                          label: const Text(
-                            "Thêm đáp án",
-                            style: TextStyle(color: Colors.blue),
-                          ),
-                          onPressed: isProcessing
-                              ? null
-                              : () {
-                            setState(() {
-                              isProcessing = true;
-                              options.add("Đáp án ${options.length + 1}");
-                              optionControllers.add(TextEditingController(
-                                  text: "Đáp án ${options.length}"));
-                              isProcessing = false;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            overlayColor: const Color(0xFFEEF3FF),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                      if (widget.questionType != 'True/False')
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.add, color: Colors.blue),
+                            label: const Text(
+                              "Thêm đáp án",
+                              style: TextStyle(color: Colors.blue),
                             ),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 8, horizontal: 16),
+                            onPressed: isProcessing
+                                ? null
+                                : () {
+                              setState(() {
+                                isProcessing = true;
+                                final text = 'Đáp án ${options.length + 1}';
+                                options.add(
+                                  jsonEncode(
+                                    (Document()..insert(0, text))
+                                        .toDelta()
+                                        .toJson(),
+                                  ),
+                                );
+                                optionControllers.add(
+                                  QuillController(
+                                    document: Document()..insert(0, text),
+                                    selection: const TextSelection
+                                        .collapsed(offset: 0),
+                                  ),
+                                );
+                                isProcessing = false;
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8, horizontal: 16),
+                            ),
                           ),
                         ),
-                      ),
                       const SizedBox(height: 24),
 
                       // Giải thích
@@ -311,17 +451,33 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                       const SizedBox(height: 8),
                       GestureDetector(
                         onTap: () async {
+                          final initialContent = jsonEncode(
+                              explanationController.document.toDelta().toJson());
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => TextEditorPage(
-                                initialContent: explanationController.text,
+                                initialContent: initialContent,
                               ),
                             ),
                           );
                           if (result != null) {
                             setState(() {
-                              explanationController.text = result;
+                              try {
+                                final deltaJson = jsonDecode(result);
+                                explanationController = QuillController(
+                                  document: Document.fromJson(deltaJson),
+                                  selection:
+                                  const TextSelection.collapsed(offset: 0),
+                                );
+                              } catch (e) {
+                                print("Lỗi xử lý giải thích: $e");
+                                explanationController = QuillController(
+                                  document: Document()..insert(0, result),
+                                  selection:
+                                  const TextSelection.collapsed(offset: 0),
+                                );
+                              }
                             });
                           }
                         },
@@ -332,18 +488,16 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           padding: const EdgeInsets.all(16),
-                          child: Text(
-                            explanationController.text.isEmpty
-                                ? "Nhập nội dung giải thích cho câu hỏi này"
-                                : explanationController.text,
-                            style: TextStyle(
-                              color: explanationController.text.isEmpty
-                                  ? Colors.grey
-                                  : Colors.black,
-                              fontSize: 16,
+                          child: QuillEditor.basic(
+                            configurations: QuillEditorConfigurations(
+                              controller: explanationController,
+                              autoFocus: false,
+                              scrollable: false,
+                              enableInteractiveSelection: false,
+                              padding: EdgeInsets.zero,
+                              expands: false,
                             ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
+                            scrollController: ScrollController(),
                           ),
                         ),
                       ),
@@ -358,27 +512,66 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
-                onPressed: () {
-                  if (questionController.text.isEmpty) {
+                onPressed: () async {
+                  if (questionController.document.isEmpty()) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content: Text("Vui lòng nhập nội dung câu hỏi")),
                     );
                     return;
                   }
-                  if (selectedOption == null) {
+                  if (widget.questionType == '1 đáp án' &&
+                      selectedOption == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content: Text("Vui lòng chọn một đáp án đúng")),
                     );
                     return;
                   }
-                  Navigator.pop(context, {
-                    'question': questionController.text,
-                    'options': options,
-                    'correctOption': selectedOption,
-                    'explanation': explanationController.text,
-                  });
+                  if (widget.questionType == 'Nhiều đáp án' &&
+                      selectedOptions.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content:
+                          Text("Vui lòng chọn ít nhất một đáp án đúng")),
+                    );
+                    return;
+                  }
+                  if (widget.questionType == 'True/False' &&
+                      selectedTrueFalse == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Vui lòng chọn đáp án Đúng hoặc Sai")),
+                    );
+                    return;
+                  }
+
+                  // Chuẩn bị dữ liệu câu hỏi
+                  final questionData = {
+                    'quizId': widget.dataQuiz?['id'],
+                    'question': jsonEncode(
+                        questionController.document.toDelta().toJson()),
+                    'type': widget.questionType,
+                    'options': options, // Đã là chuỗi Delta JSON
+                    'correctOption': widget.questionType == '1 đáp án'
+                        ? selectedOption
+                        : widget.questionType == 'Nhiều đáp án'
+                        ? selectedOptions
+                        : selectedTrueFalse,
+                    'explanation': jsonEncode(
+                        explanationController.document.toDelta().toJson()),
+                  };
+
+                  try {
+                    // Gọi API để lưu câu hỏi (nếu cần)
+                    // final quizApiService = QuizApiService();
+                    // await quizApiService.createQuestion(questionData);
+                    Navigator.pop(context, questionData); // Trả về dữ liệu câu hỏi
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Lỗi khi lưu câu hỏi: $e")),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6A5AE0),
