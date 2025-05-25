@@ -41,8 +41,10 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
+                print("Lỗi FutureBuilder: ${snapshot.error}");
                 return const Center(child: Text('Lỗi khi tải dữ liệu'));
               } else if (!snapshot.hasData) {
+                print("Lỗi FutureBuilder: ${snapshot.error}");
                 return const Center(child: Text('Không có dữ liệu'));
               }
 
