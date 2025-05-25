@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/createExam/QuestionEditorPage.dart';
 
 class QuestionTypeDialog extends StatefulWidget {
-  final Map<String, dynamic>? dataQuiz; // Nhận dataQuiz từ QuestionScreen
+  final Map<String, dynamic>? dataQuiz;
 
   const QuestionTypeDialog({super.key, this.dataQuiz});
 
@@ -157,7 +157,7 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                   ),
                   onPressed: () {
                     // Truyền dataQuiz và selectedQuestionType sang QuestionEditorPage
-                    Navigator.push(
+                    Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
                         builder: (context) => QuestionEditorPage(

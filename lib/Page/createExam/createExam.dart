@@ -25,7 +25,6 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   void initState() {
     super.initState();
     _idUser = widget.idUser;
-    print('User ID in CreateExamScreen: $_idUser');
   }
 
   @override
@@ -528,9 +527,10 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   }
 
   Future<Map<String, dynamic>> saveQuiz(Quiz quiz, File? avatar) async {
-    print("object::: $quiz");
+
     QuizApiService quizApiService = QuizApiService();
     final dataReturn = await quizApiService.createQuiz(quiz, avatar);
+    print("object::: $dataReturn");
     return dataReturn;
   }
 }

@@ -2,7 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:quizapp_fe/Page/createExam/TextEditorPage.dart';
-import 'package:quizapp_fe/model/quiz_api.dart'; // Giả sử bạn có QuizApiService
+import 'package:quizapp_fe/entities/answer.dart';
+import 'package:quizapp_fe/entities/question.dart';
+import 'package:quizapp_fe/model/answer_api.dart';
+import 'package:quizapp_fe/model/question_api.dart';
+import 'package:quizapp_fe/model/quiz_api.dart';
 
 class QuestionEditorPage extends StatefulWidget {
   final Map<String, dynamic>? dataQuiz;
@@ -37,29 +41,31 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
   @override
   void initState() {
     super.initState();
+    print("dsdsdsd: ${widget.dataQuiz?['id']}");
+
     // Khởi tạo danh sách đáp án dựa trên loại câu hỏi
     if (widget.questionType == 'True/False') {
       options = [
-        jsonEncode((Document()..insert(0, 'Đúng')).toDelta().toJson()),
-        jsonEncode((Document()..insert(0, 'Sai')).toDelta().toJson()),
+        jsonEncode(Document().toDelta().toJson()), // Ô trống cho "Đúng"
+        jsonEncode(Document().toDelta().toJson()), // Ô trống cho "Sai"
       ];
       optionControllers = [
         QuillController(
-          document: Document()..insert(0, 'Đúng'),
+          document: Document(),
           selection: const TextSelection.collapsed(offset: 0),
         ),
         QuillController(
-          document: Document()..insert(0, 'Sai'),
+          document: Document(),
           selection: const TextSelection.collapsed(offset: 0),
         ),
       ];
     } else {
       options = [
-        jsonEncode((Document()..insert(0, 'Đáp án 1')).toDelta().toJson()),
+        jsonEncode(Document().toDelta().toJson()), // Ô đáp án trống
       ];
       optionControllers = [
         QuillController(
-          document: Document()..insert(0, 'Đáp án 1'),
+          document: Document(),
           selection: const TextSelection.collapsed(offset: 0),
         ),
       ];
@@ -96,7 +102,7 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
           print("Lỗi đồng bộ: $e");
           optionControllers.add(
             QuillController(
-              document: Document()..insert(0, options[optionControllers.length]),
+              document: Document(),
               selection: const TextSelection.collapsed(offset: 0),
             ),
           );
@@ -139,8 +145,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                 ],
               ),
             ),
-
-            // Content
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
@@ -177,8 +181,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
-                      // Nội dung câu hỏi
                       const Text(
                         "Nội dung câu hỏi",
                         style: TextStyle(
@@ -240,8 +242,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
-                      // Đáp án
                       const Text(
                         "Đáp án",
                         style: TextStyle(
@@ -263,7 +263,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Phần chọn đáp án, nhãn và nút xóa
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
@@ -301,33 +300,47 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                         },
                                       ),
                                     Text(
-                                      'Đáp án ${index + 1}', // Nhãn động bắt đầu từ "Đáp án 1"
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      'Đáp án ${index + 1}',
+                                      style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold),
                                     ),
-                                    const Spacer(), // Đẩy nút xóa sang bên phải
+                                    const Spacer(),
                                     if (widget.questionType != 'True/False')
                                       IconButton(
-                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                        onPressed: isProcessing || options.length <= 1
+                                        icon: const Icon(Icons.delete_outline,
+                                            color: Colors.red),
+                                        onPressed: isProcessing ||
+                                            options.length <= 1
                                             ? null
                                             : () {
                                           setState(() {
                                             isProcessing = true;
                                             options.removeAt(index);
-                                            optionControllers[index].dispose();
-                                            optionControllers.removeAt(index);
-                                            if (widget.questionType == '1 đáp án') {
-                                              if (selectedOption == index) {
+                                            optionControllers[index]
+                                                .dispose();
+                                            optionControllers
+                                                .removeAt(index);
+                                            if (widget.questionType ==
+                                                '1 đáp án') {
+                                              if (selectedOption ==
+                                                  index) {
                                                 selectedOption = null;
-                                              } else if (selectedOption != null &&
+                                              } else if (selectedOption !=
+                                                  null &&
                                                   selectedOption! > index) {
-                                                selectedOption = selectedOption! - 1;
+                                                selectedOption =
+                                                    selectedOption! - 1;
                                               }
-                                            } else if (widget.questionType == 'Nhiều đáp án') {
+                                            } else if (widget.questionType ==
+                                                'Nhiều đáp án') {
                                               selectedOptions.remove(index);
-                                              selectedOptions = selectedOptions
-                                                  .map((i) => i > index ? i - 1 : i)
-                                                  .toList();
+                                              selectedOptions =
+                                                  selectedOptions
+                                                      .map((i) => i > index
+                                                      ? i - 1
+                                                      : i)
+                                                      .toList();
                                             }
                                             isProcessing = false;
                                           });
@@ -335,11 +348,13 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                       ),
                                   ],
                                 ),
-                                // Ô nhập văn bản
                                 GestureDetector(
                                   onTap: () async {
                                     final initialContent = jsonEncode(
-                                        optionControllers[index].document.toDelta().toJson());
+                                        optionControllers[index]
+                                            .document
+                                            .toDelta()
+                                            .toJson());
                                     final result = await Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -353,19 +368,27 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                         try {
                                           final deltaJson = jsonDecode(result);
                                           options[index] = result;
-                                          optionControllers[index] = QuillController(
-                                            document: Document.fromJson(deltaJson),
-                                            selection: const TextSelection.collapsed(offset: 0),
-                                          );
+                                          optionControllers[index] =
+                                              QuillController(
+                                                document:
+                                                Document.fromJson(deltaJson),
+                                                selection: const TextSelection
+                                                    .collapsed(offset: 0),
+                                              );
                                         } catch (e) {
                                           print("Lỗi xử lý đáp án $index: $e");
                                           options[index] = jsonEncode(
-                                            (Document()..insert(0, result)).toDelta().toJson(),
+                                            (Document()..insert(0, result))
+                                                .toDelta()
+                                                .toJson(),
                                           );
-                                          optionControllers[index] = QuillController(
-                                            document: Document()..insert(0, result),
-                                            selection: const TextSelection.collapsed(offset: 0),
-                                          );
+                                          optionControllers[index] =
+                                              QuillController(
+                                                document: Document()
+                                                  ..insert(0, result),
+                                                selection: const TextSelection
+                                                    .collapsed(offset: 0),
+                                              );
                                         }
                                       });
                                     }
@@ -375,7 +398,8 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                       border: Border.all(color: Colors.grey.shade300),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 16),
                                     child: QuillEditor.basic(
                                       configurations: QuillEditorConfigurations(
                                         controller: optionControllers[index],
@@ -394,8 +418,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                           );
                         },
                       ),
-
-                      // Nút thêm đáp án
                       if (widget.questionType != 'True/False')
                         Container(
                           margin: const EdgeInsets.symmetric(vertical: 8),
@@ -410,17 +432,14 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                 : () {
                               setState(() {
                                 isProcessing = true;
-                                final text = 'Đáp án ${options.length + 1}';
                                 options.add(
                                   jsonEncode(
-                                    (Document()..insert(0, text))
-                                        .toDelta()
-                                        .toJson(),
+                                    Document().toDelta().toJson(),
                                   ),
                                 );
                                 optionControllers.add(
                                   QuillController(
-                                    document: Document()..insert(0, text),
+                                    document: Document(),
                                     selection: const TextSelection
                                         .collapsed(offset: 0),
                                   ),
@@ -439,8 +458,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                           ),
                         ),
                       const SizedBox(height: 24),
-
-                      // Giải thích
                       const Text(
                         "Giải thích",
                         style: TextStyle(
@@ -453,6 +470,7 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                         onTap: () async {
                           final initialContent = jsonEncode(
                               explanationController.document.toDelta().toJson());
+
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -461,6 +479,7 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                               ),
                             ),
                           );
+
                           if (result != null) {
                             setState(() {
                               try {
@@ -506,70 +525,115 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                 ),
               ),
             ),
-
-            // Nút Lưu
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
                 onPressed: () async {
+                  print("dâtaaQuiz: ${widget.dataQuiz}");
                   if (questionController.document.isEmpty()) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Vui lòng nhập nội dung câu hỏi")),
+                      const SnackBar(content: Text("Vui lòng nhập nội dung câu hỏi")),
                     );
                     return;
                   }
-                  if (widget.questionType == '1 đáp án' &&
-                      selectedOption == null) {
+                  if (widget.questionType == '1 đáp án' && selectedOption == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Vui lòng chọn một đáp án đúng")),
+                      const SnackBar(content: Text("Vui lòng chọn một đáp án đúng")),
                     );
                     return;
                   }
-                  if (widget.questionType == 'Nhiều đáp án' &&
-                      selectedOptions.isEmpty) {
+                  if (widget.questionType == 'Nhiều đáp án' && selectedOptions.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                          Text("Vui lòng chọn ít nhất một đáp án đúng")),
+                      const SnackBar(content: Text("Vui lòng chọn ít nhất một đáp án đúng")),
                     );
                     return;
                   }
-                  if (widget.questionType == 'True/False' &&
-                      selectedTrueFalse == null) {
+                  if (widget.questionType == 'True/False' && selectedTrueFalse == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Vui lòng chọn đáp án Đúng hoặc Sai")),
+                      const SnackBar(content: Text("Vui lòng chọn đáp án Đúng hoặc Sai")),
                     );
                     return;
                   }
 
-                  // Chuẩn bị dữ liệu câu hỏi
-                  final questionData = {
-                    'quizId': widget.dataQuiz?['id'],
-                    'question': jsonEncode(
-                        questionController.document.toDelta().toJson()),
-                    'type': widget.questionType,
-                    'options': options, // Đã là chuỗi Delta JSON
-                    'correctOption': widget.questionType == '1 đáp án'
-                        ? selectedOption
-                        : widget.questionType == 'Nhiều đáp án'
-                        ? selectedOptions
-                        : selectedTrueFalse,
-                    'explanation': jsonEncode(
-                        explanationController.document.toDelta().toJson()),
-                  };
+                  // Tạo danh sách Answer (chưa có questionId)
+                  List<Answer> listanswer = [];
+                  for (int index = 0; index < options.length; index++) {
+                    bool correct;
+                    if (widget.questionType == '1 đáp án') {
+                      correct = index == selectedOption;
+                    } else if (widget.questionType == 'Nhiều đáp án') {
+                      correct = selectedOptions.contains(index);
+                    } else {
+                      correct = (index == 0 && selectedTrueFalse == true) ||
+                          (index == 1 && selectedTrueFalse == false);
+                    }
+
+                    listanswer.add(
+                      Answer(
+                        id: null,
+                        quizId: widget.dataQuiz?['id'],
+                        questionId: null,
+                        correct: correct,
+                        content: options[index],
+                        createdAt: DateTime.now().toIso8601String(),
+                      ),
+                    );
+                  }
+
+                  // Tạo đối tượng Question
+                  Question question = Question(
+                    id: null,
+                    quizId: widget.dataQuiz?['id'],
+                    content: jsonEncode(questionController.document.toDelta().toJson()),
+                    title: "Câu ${widget.dataQuiz?['questionCount'] != null ? widget.dataQuiz!['questionCount'] + 1 : 1}",
+                    type: widget.questionType,
+                  );
 
                   try {
-                    // Gọi API để lưu câu hỏi (nếu cần)
-                    // final quizApiService = QuizApiService();
-                    // await quizApiService.createQuestion(questionData);
-                    Navigator.pop(context, questionData); // Trả về dữ liệu câu hỏi
+
+                    // Lưu câu hỏi trước
+                    final questionApi = QuestionApi();
+                    final questionResult = await questionApi.saveQuestion(question);
+                    if (questionResult == null || questionResult['idQuestion'] == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Lưu câu hỏi thất bại")),
+                      );
+                      return;
+                    }
+
+                    // Lấy questionId từ kết quả
+                    final questionId = questionResult['idQuestion'] as int;
+
+                    // Cập nhật questionId cho listanswer
+                    listanswer = listanswer.map((answer) => Answer(
+                      id: answer.id,
+                      quizId: answer.quizId,
+                      questionId: questionId,
+                      correct: answer.correct,
+                      content: answer.content,
+                      createdAt: answer.createdAt,
+                    )).toList();
+
+                    // Lưu danh sách đáp án
+                    final answerApi = AnswerApi();
+                    final answerResult = await answerApi.saveAnswers(listanswer);
+                    if (answerResult != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Lưu câu hỏi và đáp án thành công: ID $questionId")),
+                      );
+                      Navigator.pop(context, {
+                        'question': questionResult,
+                        'answers': answerResult,
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Lưu đáp án thất bại")),
+                      );
+                    }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Lỗi khi lưu câu hỏi: $e")),
+                      SnackBar(content: Text("Lỗi khi lưu: $e")),
                     );
                   }
                 },

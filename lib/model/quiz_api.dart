@@ -84,12 +84,13 @@ class QuizApiService {
 
   Future<List<Map<String, dynamic>>> fetchQuizdemoQuiz(int idquiz) async {
     final response = await http.get(
-      Uri.parse('${BaseUrl.url}/question/getDeilQuiz/$idquiz'),
+      Uri.parse('${BaseUrl.url}/question/getDetailQuiz/$idquiz'),
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         'Accept': 'application/json; charset=UTF-8',
       },
     );
+    print("urlll: ${Uri.parse('${BaseUrl.url}/question/getDetailQuiz/$idquiz')}");
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -247,35 +248,4 @@ class QuizApiService {
     }
   }
 
-}
-
-void main() async {
-
-  final testQuiz = Quiz(
-    title: 'Quiz Test từ Flutter',
-    content: 'Đây là nội dung quiz test',
-    userId: 1,
-  );
-
-  final testImagePath = "C:\\Users\\HP\\Pictures\\Screenshots\\Screenshot 2025-05-13 125518.png";
-  final testImage = File(testImagePath);
-
-  if (!await testImage.exists()) {
-    print('Ảnh test không tồn tại tại đường dẫn: $testImagePath');
-    return;
-  }
-
-  print('Bắt đầu test tạo quiz...');
-
-  try {
-    final quizService = QuizApiService();
-    final result = await quizService.createQuiz(testQuiz, testImage);
-
-    print('Tạo quiz thành công!');
-    print('Kết quả trả về:');
-    print(result);
-  } catch (e) {
-    print('Lỗi khi tạo quiz:');
-    print(e.toString());
-  }
 }

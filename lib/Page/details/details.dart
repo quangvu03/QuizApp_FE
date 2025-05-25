@@ -21,7 +21,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
     super.initState();
     _quizDetail = QuizApiService().fetchQuizDetailRaw(widget.idquiz);
     _questions = QuizApiService().fetchQuizdemoQuiz(widget.idquiz);
-    print("_question: ${_questions}");
   }
 
   @override
