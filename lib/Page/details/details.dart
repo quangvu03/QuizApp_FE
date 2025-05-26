@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/details/ExamSettingDialog.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'dart:convert'; // Để parse JSON
 
 class QuizDetailPage extends StatefulWidget {
   final int idquiz;
@@ -109,7 +111,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                                   width: double.infinity,
                                   height: double.infinity,
                                 )
-                                    : SizedBox(), // hoặc có thể thay bằng Image.asset nếu muốn
+                                    : const SizedBox(),
                               ),
                               Positioned(
                                 top: 10,
@@ -130,7 +132,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ],
                           ),
                         ),
-
                         // Quiz title
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -143,7 +144,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ),
                           ),
                         ),
-
                         // Quiz details
                         Padding(
                           padding: const EdgeInsets.all(16),
@@ -160,7 +160,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ],
                           ),
                         ),
-
                         // Date
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -175,7 +174,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ],
                           ),
                         ),
-
                         // Action buttons
                         Padding(
                           padding: const EdgeInsets.all(16),
@@ -188,7 +186,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                                       context: context,
                                       builder: (BuildContext context) {
                                         return Dialog(
-                                          insetPadding: EdgeInsets.zero, // Toàn màn hình
+                                          insetPadding: EdgeInsets.zero,
                                           backgroundColor: Colors.transparent,
                                           child: ExamSettingsDialog(
                                             idquiz: widget.idquiz,
@@ -317,7 +315,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Tabs moved to the top of the questions section
+                        // Tabs
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
@@ -345,17 +343,19 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             }
 
                             final questions = snapshot.data!;
-                            return Column(
-                              children: questions.asMap().entries.map((entry) {
-                                final index = entry.key + 1;
-                                final question = entry.value;
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: questions.length,
+                              itemBuilder: (context, index) {
+                                final question = questions[index];
                                 final answers = List<Map<String, dynamic>>.from(question['answers'] ?? []);
                                 return _buildQuestionItem(
-                                  index,
-                                  question['content'] ?? 'Không có nội dung',
-                                  answers.map((answer) => answer['content']?.toString() ?? '').toList(),
+                                  index + 1,
+                                  question['content'] ?? '[]',
+                                  answers.map((answer) => answer['content']?.toString() ?? '[]').toList(),
                                 );
-                              }).toList(),
+                              },
                             );
                           },
                         ),
@@ -431,30 +431,64 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
     );
   }
 
-  Widget _buildQuestionItem(int number, String question, List<String> options) {
+  Widget _buildQuestionItem(int number, String questionJson, List<String> optionsJson) {
+    // Parse JSON content của câu hỏi
+    late quill.Document doc;
+    try {
+      final deltaJson = jsonDecode(questionJson);
+      doc = quill.Document.fromJson(deltaJson);
+    } catch (e) {
+      doc = quill.Document()..insert(0, 'Nội dung câu hỏi không hợp lệ');
+    }
+    final questionController = quill.QuillController(
+      document: doc,
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Text(
-          //   'Câu $number',
-          //   style: const TextStyle(
-          //     fontWeight: FontWeight.w500,
-          //   ),
-          // ),
           Text(
-            'Câu $number. $question',
+            'Câu $number',
             style: const TextStyle(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
+          // Hiển thị nội dung câu hỏi bằng QuillEditor.basic
+          quill.QuillEditor.basic(
+            configurations: quill.QuillEditorConfigurations(
+              controller: questionController,
+              // readOnly: true,
+              autoFocus: false,
+              enableInteractiveSelection: false,
+              scrollable: false,
+              padding: EdgeInsets.zero,
+              expands: false,
+              customStyles: quill.DefaultStyles(
+                paragraph: quill.DefaultTextBlockStyle(
+                  const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  const quill.VerticalSpacing(2, 2),         // spacing
+                  const quill.VerticalSpacing(0, 0),         // lineSpacing
+                  null,
+                ),
+              ),
+            ),
+            scrollController: ScrollController(),
+          ),
+          const SizedBox(height: 8),
+          // Hiển thị các đáp án
           ...List.generate(
-            options.length,
+            optionsJson.length,
                 (index) => _buildOptionItem(
               String.fromCharCode(65 + index), // A, B, C, D...
-              options[index],
+              optionsJson[index],
             ),
           ),
         ],
@@ -462,7 +496,20 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
     );
   }
 
-  Widget _buildOptionItem(String prefix, String option) {
+  Widget _buildOptionItem(String prefix, String optionJson) {
+    // Parse JSON content của đáp án
+    late quill.Document doc;
+    try {
+      final deltaJson = jsonDecode(optionJson);
+      doc = quill.Document.fromJson(deltaJson);
+    } catch (e) {
+      doc = quill.Document()..insert(0, 'Đáp án không hợp lệ');
+    }
+    final optionController = quill.QuillController(
+      document: doc,
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -473,10 +520,38 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           Expanded(
-            child: Text(option),
+            child: quill.QuillEditor.basic(
+              configurations: quill.QuillEditorConfigurations(
+                controller: optionController,
+                // readOnly: true,
+                autoFocus: false,
+                enableInteractiveSelection: false,
+                scrollable: false,
+                padding: EdgeInsets.zero,
+                expands: false,
+                customStyles: quill.DefaultStyles(
+                  paragraph: quill.DefaultTextBlockStyle(
+                    const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                    const quill.VerticalSpacing(2, 2),         // spacing
+                    const quill.VerticalSpacing(0, 0),         // lineSpacing
+                    null,                   // padding
+                  ),
+                ),
+              ),
+              scrollController: ScrollController(),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // Giải phóng tài nguyên
+    super.dispose();
   }
 }

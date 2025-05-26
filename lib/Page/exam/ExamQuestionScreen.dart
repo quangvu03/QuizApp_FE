@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert'; // Để parse JSON
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quizapp_fe/Page/exam/QuestionSelectionDialog.dart';
@@ -12,6 +13,8 @@ import 'package:quizapp_fe/model/account_api.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
 import 'package:quizapp_fe/model/take_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
+
 class ExamQuestionScreen extends StatefulWidget {
   final int idquizd;
 
@@ -83,11 +86,11 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           idUser = user.id;
         });
       } catch (e) {
-        print("Error loading user: $e");
+        // print("Error loading user: $e");
         ToastHelper.showError("Không thể tải thông tin người dùng");
       }
     } else {
-      print("usernull");
+      // print("usernull");
       ToastHelper.showError("Vui lòng đăng nhập lại");
     }
   }
@@ -96,8 +99,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
     int hours = seconds ~/ 3600;
     int minutes = (seconds % 3600) ~/ 60;
     int secs = seconds % 60;
-    return '${hours.toString().padLeft(2, '0')} : ${minutes.toString().padLeft(
-        2, '0')} : ${secs.toString().padLeft(2, '0')}';
+    return '${hours.toString().padLeft(2, '0')} : ${minutes.toString().padLeft(2, '0')} : ${secs.toString().padLeft(2, '0')}';
   }
 
   Future<void> fetchAPIexam(int idquiz) async {
@@ -106,28 +108,25 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
 
       setState(() {
         totalQuestion = examapi?["numberexamQuizDTO"] ?? 0;
-        examQuizList =
-        List<Map<String, dynamic>>.from(examapi?["examQuizDTO"] ?? []);
+        examQuizList = List<Map<String, dynamic>>.from(examapi?["examQuizDTO"] ?? []);
 
         if (examQuizList == null || examQuizList!.isEmpty) {
-          print("Danh sách câu hỏi rỗng hoặc null");
-          question = "Không có câu hỏi";
+          // print("Danh sách câu hỏi rỗng hoặc null");
+          question = "[]"; // Chuỗi JSON Delta mặc định
           type = "";
           answers = [];
           return;
         }
 
         if (_number! < 1 || _number! > examQuizList!.length) {
-          print("Số câu hỏi không hợp lệ: $_number");
+          // print("Số câu hỏi không hợp lệ: $_number");
           _number = 1;
         }
 
         int questionIndex = _number! - 1;
-        question =
-            examQuizList![questionIndex]["content"] ?? "Không có nội dung";
+        question = examQuizList![questionIndex]["content"] ?? "[]";
         type = examQuizList![questionIndex]["type"] ?? "";
-        answers = List<Map<String, dynamic>>.from(
-            examQuizList![questionIndex]["answers"] ?? []);
+        answers = List<Map<String, dynamic>>.from(examQuizList![questionIndex]["answers"] ?? []);
         int currentQuestionId = examQuizList![questionIndex]["id"];
         var historyEntry = _answerHistory.firstWhere(
               (entry) => entry['questionId'] == currentQuestionId,
@@ -136,20 +135,19 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
 
         if (historyEntry.isNotEmpty) {
           int? answerId = historyEntry['answerId'];
-          _selectedAnswer =
-              answers?.indexWhere((answer) => answer["id"] == answerId);
+          _selectedAnswer = answers?.indexWhere((answer) => answer["id"] == answerId);
           _hasAnswered = _selectedAnswer != null && _selectedAnswer != -1;
         } else {
           _selectedAnswer = null;
           _hasAnswered = false;
         }
 
-        print("Answer History: $_answerHistory");
+        // print("Answer History: $_answerHistory");
       });
     } catch (e) {
-      print("Lỗi khi lấy dữ liệu từ API: $e");
+      // print("Lỗi khi lấy dữ liệu từ API: $e");
       setState(() {
-        question = "Lỗi tải câu hỏi";
+        question = "[]";
         type = "";
         answers = [];
       });
@@ -158,28 +156,22 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
 
   void _saveAnswerToHistory(int questionNumber, int? selectedAnswer) {
     int questionId = examQuizList![questionNumber - 1]["id"];
-    int? answerId =
-    selectedAnswer != null ? answers![selectedAnswer]["id"] : null;
-    int existingIndex =
-    _answerHistory.indexWhere((entry) => entry['questionId'] == questionId);
+    int? answerId = selectedAnswer != null ? answers![selectedAnswer]["id"] : null;
+    int existingIndex = _answerHistory.indexWhere((entry) => entry['questionId'] == questionId);
 
-    // Tạo đối tượng lịch sử trả lời mới
     Map<String, dynamic> newEntry = {
       'questionId': questionId,
       'answerId': answerId,
     };
 
     if (existingIndex != -1) {
-      // Cập nhật nếu câu hỏi đã có trong lịch sử
       _answerHistory[existingIndex] = newEntry;
     } else {
-      // Thêm mới nếu chưa có
       _answerHistory.add(newEntry);
     }
 
-    // Kiểm tra xem tất cả câu hỏi đã được trả lời chưa
     if (!_hasPrintedAnswers && areAllQuestionsAnswered()) {
-      _hasPrintedAnswers = true; // Đặt cờ để không in lại
+      _hasPrintedAnswers = true;
       printAllAnswers();
     }
   }
@@ -208,18 +200,17 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
     int correctCount = 0;
     for (var question in examQuizList!) {
       int questionId = question['id'];
-      String questionContent = question['content'] ?? "Không có nội dung";
+      String questionContent = question['content'] ?? "[]";
       var historyEntry = _answerHistory.firstWhere(
             (entry) => entry['questionId'] == questionId,
         orElse: () => {},
       );
 
       if (historyEntry.isNotEmpty && historyEntry['answerId'] != null) {
-        var answers = List<Map<String, dynamic>>.from(
-            question['answers'] ?? []);
+        var answers = List<Map<String, dynamic>>.from(question['answers'] ?? []);
         var selectedAnswer = answers.firstWhere(
               (answer) => answer['id'] == historyEntry['answerId'],
-          orElse: () => {'content': 'Không tìm thấy đáp án', 'correct': false},
+          orElse: () => {'content': '[]', 'correct': false},
         );
 
         if (selectedAnswer['correct'] == true) {
@@ -229,41 +220,64 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           });
         }
 
-        print(
-            "Câu hỏi: $questionContent\nĐáp án chọn: ${selectedAnswer['content']}\nĐúng/Sai: ${selectedAnswer['correct']}\n");
+        // print("Câu hỏi: $questionContent\nĐáp án chọn: ${selectedAnswer['content']}\nĐúng/Sai: ${selectedAnswer['correct']}\n");
       }
     }
-    print("Số đáp án đúng: $_countCorrect/$totalQuestion");
+    // print("Số đáp án đúng: $_countCorrect/$totalQuestion");
     String formattedTime = _formatTime(_seconds.value);
     _timer.cancel();
     double score = (10 / totalQuestion!) * _countCorrect!;
-    final data = await _takeApi.saveTake(Take(score: score,
-        correct: _countCorrect,
-        time: formattedTime,
-        quizId: idQuiz,
-        userId: idUser));
+    final data = await _takeApi.saveTake(Take(
+      score: score,
+      correct: _countCorrect,
+      time: formattedTime,
+      quizId: idQuiz,
+      userId: idUser,
+    ));
 
     int idTake = data!["id"];
 
-
-    print("ans: $_answerHistory");
+    // print("ans: $_answerHistory");
 
     List<TakeAnswer> takeAnswers = _answerHistory
         .map((item) => TakeAnswer.fromMap({
       ...item,
-      'takeId' : idTake,
+      'takeId': idTake,
     }))
         .toList();
 
     final dataAnswer = await _takeAnswerApi.saveTakeAnswers(takeAnswers);
 
-    Navigator.push(context, MaterialPageRoute(builder: (context) =>
-        QuizResultScreen(totalQuestion!, _countCorrect!, formattedTime, dataAnswer,
-          examQuizList,idTake),));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuizResultScreen(
+          totalQuestion!,
+          _countCorrect!,
+          formattedTime,
+          dataAnswer,
+          examQuizList,
+          idTake,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Parse JSON Delta cho câu hỏi
+    late quill.Document questionDoc;
+    try {
+      final deltaJson = jsonDecode(question ?? "[]");
+      questionDoc = quill.Document.fromJson(deltaJson);
+    } catch (e) {
+      questionDoc = quill.Document()..insert(0, 'Nội dung câu hỏi không hợp lệ');
+    }
+    final questionController = quill.QuillController(
+      document: questionDoc,
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -280,8 +294,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           child: Column(
             children: [
               Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -302,16 +315,14 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12.0, vertical: 0.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.timer_outlined,
-                              size: 18, color: Colors.black54),
+                          const Icon(Icons.timer_outlined, size: 18, color: Colors.black54),
                           const SizedBox(width: 4),
                           ValueListenableBuilder<int>(
                             valueListenable: _seconds,
@@ -344,8 +355,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                      right: 16, left: 16, bottom: 0, top: 0),
+                  padding: const EdgeInsets.only(right: 16, left: 16, bottom: 0, top: 0),
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,13 +381,30 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          "$question",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
+                        // Hiển thị câu hỏi bằng QuillEditor.basic
+                        quill.QuillEditor.basic(
+                          configurations: quill.QuillEditorConfigurations(
+                            controller: questionController,
+                            // readOnly: true,
+                            autoFocus: false,
+                            enableInteractiveSelection: false,
+                            scrollable: false,
+                            padding: EdgeInsets.zero,
+                            expands: false,
+                            customStyles: quill.DefaultStyles(
+                              paragraph: quill.DefaultTextBlockStyle(
+                                const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                                const quill.VerticalSpacing(2, 2), // spacing
+                                const quill.VerticalSpacing(0, 0), // lineSpacing
+                                null,
+                              ),
+                            ),
                           ),
+                          scrollController: ScrollController(),
                         ),
                         const SizedBox(height: 16),
                         answers == null || answers!.isEmpty
@@ -406,17 +433,28 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                               }
                             }
 
+                            // Parse JSON Delta cho đáp án
+                            late quill.Document answerDoc;
+                            try {
+                              final deltaJson = jsonDecode(answer["content"]?.toString() ?? "[]");
+                              answerDoc = quill.Document.fromJson(deltaJson);
+                            } catch (e) {
+                              answerDoc = quill.Document()..insert(0, 'Đáp án không hợp lệ');
+                            }
+                            final answerController = quill.QuillController(
+                              document: answerDoc,
+                              selection: const TextSelection.collapsed(offset: 0),
+                            );
+
                             return Padding(
-                              padding:
-                              const EdgeInsets.only(bottom: 12.0),
+                              padding: const EdgeInsets.only(bottom: 12.0),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: backgroundColor,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                      Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withOpacity(0.05),
                                       spreadRadius: 1,
                                       blurRadius: 3,
                                       offset: const Offset(0, 1),
@@ -424,13 +462,28 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                                   ],
                                 ),
                                 child: RadioListTile<int>(
-                                  title: Text(
-                                    answer["content"]?.toString() ??
-                                        'Không có dữ liệu',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
+                                  title: quill.QuillEditor.basic(
+                                    configurations: quill.QuillEditorConfigurations(
+                                      controller: answerController,
+                                      // readOnly: true,
+                                      autoFocus: false,
+                                      enableInteractiveSelection: false,
+                                      scrollable: false,
+                                      padding: EdgeInsets.zero,
+                                      expands: false,
+                                      customStyles: quill.DefaultStyles(
+                                        paragraph: quill.DefaultTextBlockStyle(
+                                          const TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.black87,
+                                          ),
+                                          const quill.VerticalSpacing(2, 2), // spacing
+                                          const quill.VerticalSpacing(0, 0), // lineSpacing
+                                          null,
+                                        ),
+                                      ),
                                     ),
+                                    scrollController: ScrollController(),
                                   ),
                                   value: index,
                                   groupValue: _selectedAnswer,
@@ -440,17 +493,14 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                                     setState(() {
                                       _selectedAnswer = value;
                                       _hasAnswered = true;
-                                      _saveAnswerToHistory(
-                                          _number!, value);
-                                      print(
-                                          "Đáp án được chọn: $value, Answer ID: ${answers![value!]["id"]}, Đúng: ${answers![value]["correct"]}");
-                                      print(
-                                          "Answer History: $_answerHistory");
+                                      _saveAnswerToHistory(_number!, value);
+                                      // print(
+                                      //     "Đáp án được chọn: $value, Answer ID: ${answers![value!]["id"]}, Đúng: ${answers![value]["correct"]}");
+                                      // print("Answer History: $_answerHistory");
                                     });
                                   },
                                   activeColor: const Color(0xFF673AB7),
-                                  contentPadding:
-                                  const EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16.0,
                                     vertical: 8.0,
                                   ),
@@ -471,8 +521,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                 endIndent: 16,
               ),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 3.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 3.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -504,8 +553,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                       decoration: BoxDecoration(
                         color: Colors.blue,
                         borderRadius: BorderRadius.circular(20),
@@ -520,13 +568,11 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.menu_book_outlined,
-                              size: 18, color: Colors.white),
+                          const Icon(Icons.menu_book_outlined, size: 18, color: Colors.white),
                           const SizedBox(width: 4),
                           GestureDetector(
                             onTap: () async {
-                              final selectedQuestion =
-                              await showQuestionSelectionDialog(
+                              final selectedQuestion = await showQuestionSelectionDialog(
                                 context,
                                 totalQuestion,
                                 _number,
@@ -568,8 +614,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                         ],
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.arrow_forward,
-                            color: Colors.white),
+                        icon: const Icon(Icons.arrow_forward, color: Colors.white),
                         onPressed: () {
                           if (_number! < totalQuestion!) {
                             setState(() {
@@ -590,11 +635,12 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
     );
   }
 
-  Future<int?> showQuestionSelectionDialog(BuildContext context,
+  Future<int?> showQuestionSelectionDialog(
+      BuildContext context,
       int? totalQuestion,
       int? number,
       List<Map<String, dynamic>> answerHistory,
-      List<Map<String, dynamic>>? examQuizList,) async {
+      List<Map<String, dynamic>>? examQuizList) async {
     return await showDialog<int>(
       context: context,
       builder: (BuildContext context) {

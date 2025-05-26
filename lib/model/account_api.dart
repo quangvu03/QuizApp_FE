@@ -16,7 +16,7 @@ class AccountApi {
         headers: {"Content-Type": "application/json"},
         body: json.encode(user.toMap()),
       );
-      print(response.body);
+      // print(response.body);
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
         return res["result"];
@@ -24,7 +24,7 @@ class AccountApi {
         throw Exception("Bad request");
       }
     } catch (e) {
-      print("Login - Exception: $e");
+      // print("Login - Exception: $e");
       rethrow;
     }
   }
@@ -50,7 +50,7 @@ class AccountApi {
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-      print("checkUsername - Exception: $e");
+      // print("checkUsername - Exception: $e");
       rethrow;
     }
   }
@@ -61,7 +61,7 @@ class AccountApi {
         Uri.parse(
             "${BaseUrl.url}/account/findByEmail?email=${Uri.encodeComponent(email)}"),
       );
-      // print("checkEmail response: ${response.body}");
+      // // print("checkEmail response: ${response.body}");
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
         if (res["result"] == "not found") {
@@ -72,7 +72,7 @@ class AccountApi {
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-      print("checkEmail - Exception: $e");
+      // print("checkEmail - Exception: $e");
       rethrow;
     }
   }
@@ -83,8 +83,8 @@ class AccountApi {
         Uri.parse(
             "${BaseUrl.url}/account/login?username=$username&password=$password"),
       );
-      print(Uri.parse(
-          "${BaseUrl.url}/account/login?username=$username&password=$password"));
+      // print(Uri.parse(
+      //     "${BaseUrl.url}/account/login?username=$username&password=$password"));
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
         // Nếu res chứa key "result" và giá trị là "not found", ném exception
@@ -100,7 +100,7 @@ class AccountApi {
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-      print("Login - Exception: $e");
+      // print("Login - Exception: $e");
       rethrow;
     }
   }
@@ -111,8 +111,8 @@ class AccountApi {
         Uri.parse(
             "${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"),
       );
-      print(Uri.parse(
-          "${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"));
+      // print(Uri.parse(
+      //     "${BaseUrl.url}/account/changePassword?email=$email&Changepassword=$password"));
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
         return res["result"];
@@ -120,7 +120,7 @@ class AccountApi {
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-      print("checklogin - Exception: $e");
+      // print("checklogin - Exception: $e");
       rethrow;
     }
   }
@@ -132,7 +132,7 @@ class AccountApi {
         headers: {"Content-Type": "application/json"},
         body: json.encode(user.toMap()),
       );
-      print(Uri.parse("${BaseUrl.url}/account/updateAccount/$id"));
+      // print(Uri.parse("${BaseUrl.url}/account/updateAccount/$id"));
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
         return User.fromMap(res["result"]);
@@ -142,7 +142,7 @@ class AccountApi {
             "Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-      print("checklogin - Exception: $e");
+      // print("checklogin - Exception: $e");
       rethrow;
     }
   }
@@ -161,8 +161,8 @@ class AccountApi {
         },
         body: body,
       );
-      print("${BaseUrl.url}/account/newPassword?email=$email");
-      print("Request Body: $body");
+      // print("${BaseUrl.url}/account/newPassword?email=$email");
+      // print("Request Body: $body");
 
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
@@ -177,7 +177,7 @@ class AccountApi {
         }
       }
     } catch (e) {
-      print("newPassword - Exception: $e");
+      // print("newPassword - Exception: $e");
       return "Đã xảy ra lỗi: $e";
     }
   }
@@ -189,7 +189,7 @@ class AccountApi {
         'POST',
         Uri.parse('${BaseUrl.url}/upload/uploadAvatar/$username'),
       );
-      print("upload image: ${BaseUrl.url}/upload/uploadAvatar/$username");
+      // print("upload image: ${BaseUrl.url}/upload/uploadAvatar/$username");
       request.files.add(
         await http.MultipartFile.fromPath(
           'avatar',

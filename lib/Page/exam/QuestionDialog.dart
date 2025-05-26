@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class QuestionDialog extends StatefulWidget {
   final int totalQuestion;
-  final int initialQuestionIndex; // Thay vì number, dùng index để chọn câu hỏi ban đầu
-  final List<Map<String, dynamic>> questions; // Danh sách câu hỏi từ API (detailsAnswer)
+  final int initialQuestionIndex;
+  final List<Map<String, dynamic>> questions;
 
   const QuestionDialog({
     Key? key,
@@ -21,6 +23,7 @@ class _QuestionDialogState extends State<QuestionDialog> {
   late Map<String, dynamic> currentQuestion;
   late String userAnswer;
   int currentQuestionIndex = 0;
+  late quill.QuillController _questionController;
 
   @override
   void initState() {
@@ -33,30 +36,86 @@ class _QuestionDialogState extends State<QuestionDialog> {
     if (widget.questions.isNotEmpty && currentQuestionIndex < widget.questions.length) {
       currentQuestion = widget.questions[currentQuestionIndex];
       userAnswer = currentQuestion['answerId']?.toString() ?? '';
+      print("::currentQuestion:: $currentQuestion");
 
-      options = (currentQuestion['demoAnswers'] as List<dynamic>).map((answer) {
+      var questionContent = currentQuestion['content'] ?? [{'insert': 'Không có nội dung'}];
+      if (questionContent is String) {
+        try {
+          questionContent = jsonDecode(questionContent);
+        } catch (e) {
+          questionContent = {'ops': [{'insert': questionContent}]};
+        }
+      }
+      if (questionContent is List<dynamic>) {
+        questionContent = <String, dynamic>{'ops': questionContent};
+      }
+      if (questionContent is Map<String, dynamic> && questionContent.containsKey('ops')) {
+      } else {
+        questionContent = {'ops': [{'insert': 'Nội dung không hợp lệ'}]};
+      }
+
+      try {
+        print("::questionContent:: $questionContent");
+        _questionController = quill.QuillController(
+          document: quill.Document.fromJson(questionContent['ops']),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+      } catch (e) {
+        print("::questionController error:: $e");
+        _questionController = quill.QuillController(
+          document: quill.Document()..insert(0, 'Lỗi hiển thị câu hỏi'),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+      }
+
+      options = (currentQuestion['demoAnswers'] as List<dynamic>?)?.map((answer) {
         bool isCorrect = answer['correct'] == true;
         String answerId = answer['id'].toString();
         bool isSelected = userAnswer == answerId;
+
+        // Parse answer content
+        var answerContent = answer['content'] ?? [{'insert': 'Không có nội dung'}];
+        if (answerContent is String) {
+          try {
+            // Try to parse as JSON
+            answerContent = jsonDecode(answerContent);
+          } catch (e) {
+            // If not JSON, treat as plain text
+            answerContent = {'ops': [{'insert': answerContent}]};
+          }
+        }
+        if (answerContent is List<dynamic>) {
+          answerContent = <String, dynamic>{'ops': answerContent};
+        }
+        if (answerContent is Map<String, dynamic> && answerContent.containsKey('ops')) {
+        } else {
+          answerContent = {'ops': [{'insert': 'Nội dung đáp án không hợp lệ'}]};
+        }
+
+        print("::answerContent:: $answerContent");
         return AnswerOption(
           id: answerId,
-          text: answer['content'].toString(),
+          textJson: answerContent,
           isCorrect: isCorrect,
           isSelected: isSelected,
         );
-      }).toList();
+      }).toList() ?? [];
+
     } else {
-      // Dữ liệu mặc định nếu không có câu hỏi
+      _questionController = quill.QuillController(
+        document: quill.Document()..insert(0, 'Không có câu hỏi'),
+        selection: const TextSelection.collapsed(offset: 0),
+      );
       options = [
         AnswerOption(
           id: 'A',
-          text: 'Không có dữ liệu',
+          textJson: {'ops': [{'insert': 'Không có dữ liệu'}]},
           isCorrect: false,
           isSelected: false,
         ),
       ];
       currentQuestion = {
-        'content': 'Không có câu hỏi',
+        'content': {'ops': [{'insert': 'Không có câu hỏi'}]},
         'answerId': '',
       };
     }
@@ -67,6 +126,12 @@ class _QuestionDialogState extends State<QuestionDialog> {
       currentQuestionIndex = index;
       _updateQuestionAndOptions();
     });
+  }
+
+  @override
+  void dispose() {
+    _questionController.dispose();
+    super.dispose();
   }
 
   @override
@@ -104,7 +169,7 @@ class _QuestionDialogState extends State<QuestionDialog> {
                         const Expanded(
                           child: Center(
                             child: Text(
-                              'Chi tiết phần thi',
+                              'Chi tiết bài thi',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -245,28 +310,30 @@ class _QuestionDialogState extends State<QuestionDialog> {
                           ),
                         ),
                       ),
-                      // Align(
-                      //   alignment: Alignment.centerRight,
-                      //   child: Padding(
-                      //     padding: const EdgeInsets.only(right: 20.0),
-                      //     child: Text(
-                      //       '${options.length} đáp án',
-                      //       style: TextStyle(
-                      //         fontSize: 16,
-                      //         color: Colors.grey[600],
-                      //       ),
-                      //     ),
-                      //   ),
-                      // ),
                       const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                        child: Text(
-                          currentQuestion['content'] ?? 'Không có câu hỏi',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                        child: quill.QuillEditor.basic(
+                          configurations: quill.QuillEditorConfigurations(
+                            controller: _questionController,
+                            autoFocus: false,
+                            enableInteractiveSelection: false,
+                            scrollable: false,
+                            padding: EdgeInsets.zero,
+                            expands: false,
+                            customStyles: quill.DefaultStyles(
+                              paragraph: quill.DefaultTextBlockStyle(
+                                const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                ),
+                                const quill.VerticalSpacing(2, 2),
+                                const quill.VerticalSpacing(0, 0),
+                                null,
+                              ),
+                            ),
                           ),
+                          scrollController: ScrollController(),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -312,6 +379,20 @@ class _QuestionDialogState extends State<QuestionDialog> {
                                   );
                                 }
 
+                                quill.QuillController optionController;
+                                try {
+                                  optionController = quill.QuillController(
+                                    document: quill.Document.fromJson(option.textJson['ops']),
+                                    selection: const TextSelection.collapsed(offset: 0),
+                                  );
+                                } catch (e) {
+                                  print("::optionController error:: $e");
+                                  optionController = quill.QuillController(
+                                    document: quill.Document()..insert(0, 'Lỗi hiển thị đáp án'),
+                                    selection: const TextSelection.collapsed(offset: 0),
+                                  );
+                                }
+
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   decoration: BoxDecoration(
@@ -330,37 +411,49 @@ class _QuestionDialogState extends State<QuestionDialog> {
                                       onChanged: null,
                                       activeColor: Colors.transparent,
                                     ),
-                                    title: RichText(
-                                      text: TextSpan(
-                                        children: [
-                                          TextSpan(
-                                            text: '${option.id}. ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: isUserWrongAnswer
-                                                  ? const Color(0xFFFF3B30)
-                                                  : isCorrectAnswer
-                                                  ? const Color(0xFF1BC45D)
-                                                  : Colors.black,
-                                            ),
+                                    title: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${option.id}. ',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: isUserWrongAnswer
+                                                ? const Color(0xFFFF3B30)
+                                                : isCorrectAnswer
+                                                ? const Color(0xFF1BC45D)
+                                                : Colors.black,
                                           ),
-                                          TextSpan(
-                                            text: option.text,
-                                            style: TextStyle(
-                                              color: isUserWrongAnswer
-                                                  ? const Color(0xFFFF3B30)
-                                                  : isCorrectAnswer
-                                                  ? const Color(0xFF1BC45D)
-                                                  : Colors.black,
-                                              fontSize: 16,
-                                              fontWeight:
-                                              option.isCorrect || option.isSelected
-                                                  ? FontWeight.w500
-                                                  : FontWeight.normal,
+                                        ),
+                                        Expanded(
+                                          child: quill.QuillEditor.basic(
+                                            configurations: quill.QuillEditorConfigurations(
+                                              controller: optionController,
+                                              autoFocus: false,
+                                              enableInteractiveSelection: false,
+                                              scrollable: false,
+                                              padding: EdgeInsets.zero,
+                                              expands: false,
+                                              customStyles: quill.DefaultStyles(
+                                                paragraph: quill.DefaultTextBlockStyle(
+                                                  TextStyle(
+                                                    fontSize: 14,
+                                                    color: isUserWrongAnswer
+                                                        ? const Color(0xFFFF3B30)
+                                                        : isCorrectAnswer
+                                                        ? const Color(0xFF1BC45D)
+                                                        : Colors.black87,
+                                                  ),
+                                                  const quill.VerticalSpacing(2, 2),
+                                                  const quill.VerticalSpacing(0, 0),
+                                                  null,
+                                                ),
+                                              ),
                                             ),
+                                            scrollController: ScrollController(),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 );
@@ -383,13 +476,13 @@ class _QuestionDialogState extends State<QuestionDialog> {
 
 class AnswerOption {
   final String id;
-  final String text;
+  final Map<String, dynamic> textJson;
   final bool isCorrect;
   final bool isSelected;
 
   AnswerOption({
     required this.id,
-    required this.text,
+    required this.textJson,
     required this.isCorrect,
     required this.isSelected,
   });

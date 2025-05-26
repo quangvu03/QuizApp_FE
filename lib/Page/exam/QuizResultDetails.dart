@@ -1,6 +1,4 @@
-// QuizResultScreen.dart
 import 'package:flutter/material.dart';
-import 'package:quizapp_fe/Page/exam/QuestionDialog.dart';
 import 'package:quizapp_fe/Page/exam/TestResultScreen.dart';
 import 'package:quizapp_fe/entities/Takeanswer.dart';
 
@@ -365,7 +363,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                            TestResultScreen(idTake: _idTake),
+                                            TestResultScreen(idTake: _idTake, time: time),
                                             //     QuestionDialog(
                                             //   totalQuestion: _totalQuestion,
                                             //   number: _number,

@@ -5,8 +5,9 @@ import 'package:quizapp_fe/model/take_api.dart';
 
 class TestResultScreen extends StatefulWidget {
   final int? idTake;
+  final String? time;
 
-  const TestResultScreen({Key? key, required this.idTake}) : super(key: key);
+  const TestResultScreen({Key? key, required this.idTake, required this.time}) : super(key: key);
 
   @override
   _TestResultScreenState createState() => _TestResultScreenState();
@@ -30,10 +31,6 @@ class _TestResultScreenState extends State<TestResultScreen> {
     if (_idTake != null) {
       try {
         final result = await _takeApi.getDetailstakeExam(_idTake!);
-        print("-------------------------------------");
-        print("::_idtake:: $_idTake");
-        print("::result:: $result");
-
         setState(() {
           data = result;
           _isLoading = false;
@@ -55,19 +52,30 @@ class _TestResultScreenState extends State<TestResultScreen> {
 
   void _showQuestionDialog(int questionIndex) {
     final detailsAnswer = data!['detailsAnswer'] as List<dynamic>? ?? [];
-    // Ép kiểu List<dynamic> thành List<Map<String, dynamic>>
-    final questions = detailsAnswer.map((item) => item as Map<String, dynamic>).toList();
+    final questions = detailsAnswer.asMap().entries.where((entry) {
+      final item = entry.value;
+      return item is Map<String, dynamic>;
+    }).map((entry) {
+      final item = entry.value as Map<String, dynamic>;
+      return item;
+    }).toList();
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => QuestionDialog(
-          totalQuestion: detailsAnswer.length,
-          initialQuestionIndex: questionIndex,
-          questions: questions,
+    if (questionIndex >= 0 && questionIndex < questions.length) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => QuestionDialog(
+            totalQuestion: questions.length,
+            initialQuestionIndex: questionIndex,
+            questions: questions,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể mở câu hỏi: Chỉ số không hợp lệ')),
+      );
+    }
   }
 
   @override
@@ -102,17 +110,21 @@ class _TestResultScreenState extends State<TestResultScreen> {
     }
 
     final detailsAnswer = data!['detailsAnswer'] as List<dynamic>? ?? [];
+    final totalQuestions = detailsAnswer.length;
     final correctCount = detailsAnswer.where((q) {
+      if (q is! Map<String, dynamic>) return false;
       final userAnswerId = q['answerId'];
       final answers = q['demoAnswers'] as List<dynamic>? ?? [];
       return answers.any(
-            (a) => a['id'] == userAnswerId && (a['correct'] as bool? ?? false),
+            (a) =>
+        a is Map<String, dynamic> &&
+            a['id'] == userAnswerId &&
+            (a['correct'] as bool? ?? false),
       );
     }).length;
-    final totalQuestions = detailsAnswer.length;
     final incorrectCount = totalQuestions - correctCount;
-    final score = (totalQuestions/10)*correctCount;
-    final duration = data!['duration']?.toString() ?? '00:00:00';
+    final score = totalQuestions > 0 ? (correctCount * 10.0 / totalQuestions) : 0.0;
+    final duration = widget.time ?? '00:00:00';
 
     return Scaffold(
       body: Container(
@@ -125,7 +137,6 @@ class _TestResultScreenState extends State<TestResultScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // App bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
@@ -159,7 +170,6 @@ class _TestResultScreenState extends State<TestResultScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Result card
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -171,7 +181,6 @@ class _TestResultScreenState extends State<TestResultScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Score section
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Row(
@@ -187,7 +196,7 @@ class _TestResultScreenState extends State<TestResultScreen> {
                                 child: Column(
                                   children: [
                                     Text(
-                                      score.toString(),
+                                      score.toStringAsFixed(1),
                                       style: const TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -252,8 +261,8 @@ class _TestResultScreenState extends State<TestResultScreen> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0, vertical: 8.0),
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -276,11 +285,10 @@ class _TestResultScreenState extends State<TestResultScreen> {
                         ),
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0, vertical: 12.0),
+                            padding:
+                            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                             child: GridView.builder(
-                              gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 5,
                                 childAspectRatio: 1,
                                 crossAxisSpacing: 8,
@@ -288,31 +296,28 @@ class _TestResultScreenState extends State<TestResultScreen> {
                               ),
                               itemCount: totalQuestions,
                               itemBuilder: (context, index) {
-                                final questionNumber = index + 1;
-                                final question = detailsAnswer.firstWhere(
-                                      (q) => q['questionId'] == questionNumber,
-                                  orElse: () => null,
-                                );
-                                final isCorrect = question != null &&
-                                    (question['demoAnswers'] as List<dynamic>? ?? [])
-                                        .any(
+                                if (index >= detailsAnswer.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                final question = detailsAnswer[index];
+                                if (question is! Map<String, dynamic>) {
+                                  return const SizedBox.shrink();
+                                }
+                                final isCorrect = question['demoAnswers'] != null &&
+                                    (question['demoAnswers'] as List<dynamic>).any(
                                           (answer) =>
-                                      answer['id'] == question['answerId'] &&
+                                      answer is Map<String, dynamic> &&
+                                          answer['id'] == question['answerId'] &&
                                           (answer['correct'] as bool? ?? false),
                                     );
 
                                 return QuestionButton(
-                                  number: questionNumber,
+                                  number: index + 1,
                                   isHighlighted: false,
                                   status: isCorrect ? 'correct' : 'incorrect',
-                                  borderColor: isCorrect
-                                      ? const Color(0xFF1BC45D)
-                                      : const Color(0xFFFF3B30),
-                                  onTap: question != null
-                                      ? () {
-                                    _showQuestionDialog(index);
-                                  }
-                                      : null,
+                                  borderColor:
+                                  isCorrect ? const Color(0xFF1BC45D) : const Color(0xFFFF3B30),
+                                  onTap: () => _showQuestionDialog(index),
                                 );
                               },
                             ),

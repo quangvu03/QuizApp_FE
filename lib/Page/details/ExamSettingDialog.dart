@@ -5,13 +5,15 @@ class ExamSettingsDialog extends StatefulWidget {
   final int idquiz;
   final VoidCallback onClose;
 
-  const ExamSettingsDialog({required this.idquiz, Key? key, required this.onClose})
-      : super(key: key);
+  const ExamSettingsDialog({
+    required this.idquiz,
+    required this.onClose,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<ExamSettingsDialog> createState() => _ExamSettingsDialogState();
 }
-
 
 class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
   int _selectedExamModeIndex = 0;
@@ -19,7 +21,7 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
   bool _showAnswersImmediately = true;
   bool _shuffleQuestions = false;
   bool _shuffleAnswers = false;
-  String _selectedTime = '15s';
+  String _selectedTime = '30 phút';
   late int idquiz;
 
   @override
@@ -43,10 +45,10 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
           ),
         ],
       ),
-      child: SingleChildScrollView( // Thêm scroll để tránh tràn
+      child: SingleChildScrollView(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.9, // Giới hạn 90% chiều rộng màn hình
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
           ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -83,33 +85,87 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
                   ),
                 ),
 
-                // Checkboxes
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCheckboxOption(
-                      'Không giới hạn thời gian làm đề thi',
-                      _noTimeLimit,
-                          (val) {
-                        setState(() {
-                          _noTimeLimit = val!;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    _buildCheckboxOption(
-                      'Hiển thị đáp án ngay',
-                      _showAnswersImmediately,
-                          (val) {
-                        setState(() {
-                          _showAnswersImmediately = val!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
+                // Conditional options based on exam mode
+                if (_selectedExamModeIndex == 0) ...[
+                  // Practice mode options
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildCheckboxOption(
+                        'Không giới hạn thời gian làm đề thi',
+                        true, // Always checked
+                        null, // Disable interaction
+                        checkColor: Colors.green,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildCheckboxOption(
+                        'Hiển thị đáp án ngay',
+                        true, // Always checked
+                        null, // Disable interaction
+                        checkColor: Colors.green,
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  // Test mode options
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Disabled checkboxes for test mode
+                      _buildCheckboxOption(
+                        'Không giới hạn thời gian làm đề thi',
+                        true, // Always checked
+                        null, // Disable interaction
+                        checkColor: Colors.green,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildCheckboxOption(
+                        'Hiển thị đáp án ngay',
+                        true, // Always checked
+                        null, // Disable interaction
+                        checkColor: Colors.green,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Thời gian làm bài',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedTime,
+                            isExpanded: true,
+                            icon: const Icon(Icons.keyboard_arrow_down),
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            items: <String>['10 phút', '20 phút', '30 phút', '40 phút', '50 phút', '60 phút']
+                                .map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _selectedTime = newValue!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
 
                 // Settings section
                 Row(
@@ -159,56 +215,14 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
 
                 const SizedBox(height: 16),
 
-                // Auto move question timing
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Tự động chuyển câu',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity, // Đảm bảo Dropdown chiếm toàn bộ chiều rộng
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedTime,
-                          isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down),
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          items: <String>['2s', '5s', '10s', '15s', '30s']
-                              .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedTime = newValue!;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
                 // Start button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () => examquestionscreen(idquiz), // Đóng dialog khi nhấn Bắt đầu
+                    onPressed: () {
+                      examquestionscreen(idquiz);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
@@ -257,6 +271,10 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
           onChanged: (int? value) {
             setState(() {
               _selectedExamModeIndex = value!;
+              // Reset time selection to default for test mode
+              if (_selectedExamModeIndex == 1) {
+                _selectedTime = '30 phút';
+              }
             });
           },
         ),
@@ -275,7 +293,7 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
   Widget _buildCheckboxOption(
       String label,
       bool value,
-      Function(bool?) onChanged, {
+      Function(bool?)? onChanged, {
         Color checkColor = Colors.green,
       }) {
     return Row(
@@ -291,7 +309,7 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
             ),
           ),
         ),
-        Expanded( // Sử dụng Expanded để tránh tràn chiều rộng
+        Expanded(
           child: Text(
             label,
             style: const TextStyle(
@@ -303,7 +321,20 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
     );
   }
 
-   examquestionscreen(int idquiz) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => ExamQuestionScreen(idquiz),));
+  void examquestionscreen(int idquiz) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExamQuestionScreen(
+          idquiz,
+          // examMode: _selectedExamModeIndex == 0 ? 'practice' : 'test',
+          // noTimeLimit: _noTimeLimit,
+          // showAnswersImmediately: _showAnswersImmediately,
+          // shuffleQuestions: _shuffleQuestions,
+          // shuffleAnswers: _shuffleAnswers,
+          // timeLimit: _selectedExamModeIndex == 1 ? _selectedTime : null,
+        ),
+      ),
+    );
   }
 }
