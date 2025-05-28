@@ -112,8 +112,8 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
       {
         'title': 'Thành tựu trong tháng (Thử thách)',
         'averageLabel': 'Điểm trung bình',
-        'averageScore': dataAchievement != null ? '${dataAchievement!["avgScore"]}' : '0.0',
-        'totalScore': dataAchievement != null ? '${dataAchievement!["totalScore"]}' : '0',
+        'averageScore': dataAchievement != null ? dataAchievement!["avgScore"].toStringAsFixed(2) : '0.0',
+        'totalScore': dataAchievement != null ? dataAchievement!["totalScore"].toString() : '0',
         'icon': Icons.emoji_events,
         'iconColor': Colors.yellow,
         'backgroundImage': 'assets/images/home/bgr1.jpg',

@@ -36,7 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedIndex = 4;
       });
-      print("select: $_selectedIndex");
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const ProfilePage()),

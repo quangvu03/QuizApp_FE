@@ -3,6 +3,7 @@ import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/account/change_password.dart';
 import 'package:quizapp_fe/Page/account/login.dart';
 import 'package:quizapp_fe/Page/account/profile.dart';
+import 'package:quizapp_fe/Page/discoverCourse.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,13 +40,18 @@ class _ProfilePageState extends State<ProfilePage> {
     } else if (index == 2) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => PersonalInfoScreen()),
+        MaterialPageRoute(builder: (_) => DiscoverCourse()),
       );
       await _loadUsername();
       setState(() {
         _selectedIndex = index;
       });
-    } else if (index == 3) {
+    }else if(index == 1){
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => DiscoverCourse()),
+      );
+    }else if (index == 3) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => ChangePasswordPage()),

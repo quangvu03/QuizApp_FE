@@ -42,6 +42,10 @@ class _MenuCarouselState extends State<MenuCarousel> {
             itemBuilder: (context, index) {
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2), // Semi-transparent white background
+                  borderRadius: BorderRadius.circular(10), // Optional: rounded corners
+                ),
                 child: GridView.count(
                   crossAxisCount: 3,
                   childAspectRatio: 0.65,
@@ -98,7 +102,6 @@ class _MenuCarouselState extends State<MenuCarousel> {
           Stack(
             alignment: Alignment.topRight,
             children: [
-              // Container viền gradient với viền ngoài giống ảnh
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(

@@ -111,16 +111,37 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Disabled checkboxes for test mode
+                      // Notification: Has time limit
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        // child: Text(
+                        //   'Có thời gian làm đề',
+                        //   style: TextStyle(
+                        //     fontSize: 16,
+                        //     color: Colors.black87,
+                        //   ),
+                        // ),
+                      ),
                       _buildCheckboxOption(
-                        'Không giới hạn thời gian làm đề thi',
+                        'Có thời gian làm đề',
                         true, // Always checked
                         null, // Disable interaction
                         checkColor: Colors.green,
                       ),
                       const SizedBox(height: 8),
+                      // Notification: No immediate answer display
+                      const Padding(
+                        padding: EdgeInsets.only(left: 16.0),
+                        // child: Text(
+                        //   'Không hiển thị đáp án sau khi chọn',
+                        //   style: TextStyle(
+                        //     fontSize: 16,
+                        //     color: Colors.black87,
+                        //   ),
+                        // ),
+                      ),
                       _buildCheckboxOption(
-                        'Hiển thị đáp án ngay',
+                        'Không hiển thị đáp án sau khi chọn',
                         true, // Always checked
                         null, // Disable interaction
                         checkColor: Colors.green,
@@ -185,7 +206,7 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
 
                 const SizedBox(height: 16),
 
-                // More checkboxes
+                // Shuffle options
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -274,6 +295,11 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
               // Reset time selection to default for test mode
               if (_selectedExamModeIndex == 1) {
                 _selectedTime = '30 phút';
+                _noTimeLimit = false;
+                _showAnswersImmediately = false;
+              } else {
+                _noTimeLimit = true;
+                _showAnswersImmediately = true;
               }
             });
           },
@@ -322,17 +348,28 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
   }
 
   void examquestionscreen(int idquiz) {
-    Navigator.push(
+    // Show confirmation snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Chế độ: ${_selectedExamModeIndex == 0 ? "Ôn thi" : "Thi thử"}, '
+              'Đảo câu hỏi: ${_shuffleQuestions ? "Bật" : "Tắt"}, '
+              'Đảo câu trả lời: ${_shuffleAnswers ? "Bật" : "Tắt"}',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => ExamQuestionScreen(
           idquiz,
-          // examMode: _selectedExamModeIndex == 0 ? 'practice' : 'test',
-          // noTimeLimit: _noTimeLimit,
-          // showAnswersImmediately: _showAnswersImmediately,
-          // shuffleQuestions: _shuffleQuestions,
-          // shuffleAnswers: _shuffleAnswers,
-          // timeLimit: _selectedExamModeIndex == 1 ? _selectedTime : null,
+          examMode: _selectedExamModeIndex == 0 ? 'practice' : 'test',
+          noTimeLimit: _noTimeLimit,
+          showAnswersImmediately: _showAnswersImmediately,
+          shuffleQuestions: _shuffleQuestions,
+          shuffleAnswers: _shuffleAnswers,
+          timeLimit: _selectedExamModeIndex == 1 ? _selectedTime : null,
         ),
       ),
     );
