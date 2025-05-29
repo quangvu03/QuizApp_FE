@@ -111,6 +111,20 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
     }
   }
 
+  // Ánh xạ widget.questionType sang type trong database
+  String _mapQuestionType(String questionType) {
+    switch (questionType) {
+      case '1 đáp án':
+        return 'tracnghiem';
+      case 'Nhiều đáp án':
+        return 'nhieudapan';
+      case 'True/False':
+        return 'dungsai';
+      default:
+        return 'tracnghiem'; // Mặc định nếu có lỗi
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     _syncLists();
@@ -587,11 +601,10 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                     quizId: widget.dataQuiz?['id'],
                     content: jsonEncode(questionController.document.toDelta().toJson()),
                     title: "Câu ${widget.dataQuiz?['questionCount'] != null ? widget.dataQuiz!['questionCount'] + 1 : 1}",
-                    type: widget.questionType,
+                    type: _mapQuestionType(widget.questionType), // Sử dụng type đã ánh xạ
                   );
 
                   try {
-
                     // Lưu câu hỏi trước
                     final questionApi = QuestionApi();
                     final questionResult = await questionApi.saveQuestion(question);

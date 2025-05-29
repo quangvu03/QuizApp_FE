@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/discoverCourse.dart';
+import 'package:quizapp_fe/Page/home/ExamHistories.dart';
 
 class MenuCarousel extends StatefulWidget {
   const MenuCarousel({Key? key}) : super(key: key);
@@ -94,6 +95,8 @@ class _MenuCarouselState extends State<MenuCarousel> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Bạn đã nhấn vào Phòng thi!')),
           );
+        }else if(label == 'Kết quả của tôi'){
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ExamHistories(),));
         }
       },
       child: Column(

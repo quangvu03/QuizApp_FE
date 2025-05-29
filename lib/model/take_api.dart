@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:quizapp_fe/helpers/Url.dart';
 
 class TakeApi {
+
   Future<Map<String, dynamic>?> saveTake(Take take) async {
     try {
       var response = await http.post(
@@ -18,14 +19,11 @@ class TakeApi {
         if (data['result'] is Map<String, dynamic>) {
           return Map<String, dynamic>.from(data['result']);
         } else {
-          //print("Invalid response format");
         }
       } else {
-        //print("Lỗi khi lưu take: ${response.body}");
         return null;
       }
     } catch (e) {
-      //print("Lỗi hệ thống: $e");
       return null;
     }
   }
@@ -43,14 +41,11 @@ class TakeApi {
         if (data['result'] is Map<String, dynamic>) {
           return Take.fromMap(data["result"]);
         } else {
-          //print("Invalid response format");
         }
       } else {
-        //print("Lỗi khi lưu take: ${response.body}");
         return null;
       }
     } catch (e) {
-      //print("Lỗi hệ thống: $e");
       return null;
     }
   }
@@ -68,16 +63,13 @@ class TakeApi {
         if (data['result'] is Map<String, dynamic>) {
           return data["result"];
         } else {
-          //print("Invalid response format");
-          return {}; // Trả về map rỗng hoặc throw
+          return {};
         }
       } else {
-        //print("Lỗi khi lấy take: ${response.body}");
-        return {}; // Trả về map rỗng hoặc throw
+        return {};
       }
     } catch (e) {
-      //print("Lỗi hệ thống: $e");
-      return {}; // Trả về map rỗng hoặc throw
+      return {};
     }
   }
 
@@ -94,15 +86,12 @@ class TakeApi {
         if (data['result'] is Map<String, dynamic>) {
           return data["result"];
         } else {
-          //print("Invalid response format");
           return {};
         }
       } else {
-        //print("Lỗi khi lấy take: ${response.body}");
         return {};
       }
     } catch (e) {
-      //print("Lỗi hệ thống: $e");
       return {};
     }
   }
@@ -119,16 +108,40 @@ class TakeApi {
         if (data['result'] is int?) {
           return data["result"];
         } else {
-          //print("Invalid response format");
           return 0;
         }
       } else {
-        //print("Lỗi khi lấy take: ${response.body}");
         return 0;
       }
     } catch (e) {
-      //print("Lỗi hệ thống: $e");
       return 0;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>?> getTakesByUserName(String userName) async {
+    try {
+      var response = await http.get(
+        Uri.parse("${BaseUrl.url}/take/getTakeByUserName?username=$userName"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data =
+        jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['result'] is List<dynamic>) {
+          return List<Map<String, dynamic>>.from(
+              data['result'].map((item) => Map<String, dynamic>.from(item)));
+        } else {
+          print("Invalid response format: result is not a list");
+          return [];
+        }
+      } else {
+        print("Error retrieving takes for user $userName: ${response.body}");
+        return [];
+      }
+    } catch (e) {
+      print("System error: $e");
+      return [];
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/details/ExamSettingDialog.dart';
 import 'package:quizapp_fe/Page/exam/TestResultScreen.dart';
 import 'package:quizapp_fe/entities/Takeanswer.dart';
 
@@ -9,6 +10,7 @@ class QuizResultScreen extends StatefulWidget {
   final List<TakeAnswer> listTake;
   final List<Map<String, dynamic>>? examQuizList;
   final int? idTake;
+  final int idQuiz;
 
   const QuizResultScreen(
       this.totalQuestion,
@@ -17,6 +19,7 @@ class QuizResultScreen extends StatefulWidget {
       this.listTake,
       this.examQuizList,
       this.idTake,
+      this.idQuiz,
       {
         Key? key,
       }) : super(key: key);
@@ -45,9 +48,13 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     _listTake = widget.listTake;
     _number = 1;
     _examQuizList = widget.examQuizList;
+    printexam();
     _idTake = widget.idTake;
   }
 
+  void printexam(){
+   print("object####: $_examQuizList");
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -310,7 +317,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                       ),
                                       Flexible(
                                         child: Text(
-                                          'Số câu: $_totalQuestion câu',
+                                          'Số câu: $_totalQuestion ',
                                           style: const TextStyle(fontSize: 14),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -425,7 +432,23 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return Dialog(
+                              insetPadding: EdgeInsets.zero,
+                              backgroundColor: Colors.transparent,
+                              child: ExamSettingsDialog(
+                                idquiz: widget.idQuiz,
+                                onClose: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -444,29 +467,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        elevation: 0,
-                        side: const BorderSide(color: Colors.blue),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                      ),
-                      child: const Text(
-                        'Làm lại câu sai',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

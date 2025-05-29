@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/exam/ExamQuestionScreen.dart';
 
 class ExamSettingsDialog extends StatefulWidget {
-  final int idquiz;
+  final int? idquiz;
   final VoidCallback onClose;
 
   const ExamSettingsDialog({
@@ -27,7 +27,7 @@ class _ExamSettingsDialogState extends State<ExamSettingsDialog> {
   @override
   void initState() {
     super.initState();
-    idquiz = widget.idquiz;
+    idquiz = widget.idquiz!;
   }
 
   @override

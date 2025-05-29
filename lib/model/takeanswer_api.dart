@@ -25,7 +25,7 @@ import 'package:quizapp_fe/helpers/Url.dart';
 
 
    Future<List<TakeAnswer>> fetchTakeAnswersByTakeId(int takeId) async {
-     final response = await http.get(Uri.parse("${BaseUrl.url}/takeAnswer/findAllByTakeId?idTake=$takeId'"));
+     final response = await http.get(Uri.parse("${BaseUrl.url}/takeAnswer/findAllByTakeId?idTake=$takeId"));
 
      if (response.statusCode == 200) {
        final Map<String, dynamic> jsonData = jsonDecode(response.body);

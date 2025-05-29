@@ -147,7 +147,6 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
       setState(() {
         totalQuestion = examapi?["numberexamQuizDTO"] ?? 0;
         examQuizList = List<Map<String, dynamic>>.from(examapi?["examQuizDTO"] ?? []);
-
         if (examQuizList == null || examQuizList!.isEmpty) {
           ToastHelper.showError("Không tìm thấy câu hỏi cho bài kiểm tra này");
           question = "[]";
@@ -311,6 +310,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           dataAnswer,
           _shuffledExamQuizList,
           idTake,
+          idQuiz!,
         ),
       ),
     );

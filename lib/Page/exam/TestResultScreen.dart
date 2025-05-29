@@ -274,7 +274,7 @@ class _TestResultScreenState extends State<TestResultScreen> {
                                 ),
                               ),
                               Text(
-                                'Số câu: $totalQuestions câu',
+                                'Số câu: $totalQuestions ',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   color: Color(0xFF666666),
