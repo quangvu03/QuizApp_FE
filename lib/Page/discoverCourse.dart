@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/details/details.dart';
+import 'package:quizapp_fe/Page/exam/ListCourseByUser.dart';
 import 'package:quizapp_fe/Page/infor.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
@@ -396,111 +397,92 @@ class _DiscoverCourseState extends State<DiscoverCourse> {
                   itemCount: dsnguoitao.length,
                   itemBuilder: (context, index) {
                     final channel = dsnguoitao[index];
-                    return Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(16),
-                      ),
-                      elevation: 5,
-                      margin: const EdgeInsets.all(16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(0),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 1),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius:
-                                    const BorderRadius.only(
-                                      topLeft:
-                                      Radius.circular(16),
-                                      topRight:
-                                      Radius.circular(16),
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ListCourseByUserScreen(Username: channel['username'],),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 5,
+                        margin: const EdgeInsets.all(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(0),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 1),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(16),
+                                        topRight: Radius.circular(16),
+                                      ),
+                                      child: Image.network(
+                                        channel['image'],
+                                        width: double.infinity,
+                                        height: 150,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Image.asset(
+                                              'assets/images/home/imageHome.png',
+                                              width: double.infinity,
+                                              height: 150,
+                                              fit: BoxFit.cover,
+                                            ),
+                                      ),
                                     ),
-                                    child: Image.network(
-                                      channel['image'],
-                                      width: double.infinity,
-                                      height: 150,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context,
-                                          error,
-                                          stackTrace) =>
-                                          Image.asset(
-                                            'assets/images/home/imageHome.png',
-                                            width:
-                                            double.infinity,
-                                            height: 150,
-                                            fit: BoxFit.cover,
+                                    const SizedBox(height: 10),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 20),
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 12,
+                                            backgroundImage: NetworkImage(
+                                              '${BaseUrl.urlImage}${channel['image']}',
+                                            ),
+                                            backgroundColor: Colors.grey[200],
                                           ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Padding(
-                                    padding:
-                                    const EdgeInsets.only(
-                                      left: 20,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 12,
-                                          backgroundImage:
-                                          NetworkImage(
-                                            '${BaseUrl.urlImage}${channel['image']}',
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            channel['username'] ?? 'No username',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                          backgroundColor:
-                                          Colors.grey[200],
-                                        ),
-                                        const SizedBox(
-                                          width: 10,
-                                        ),
-                                        Text(
-                                          channel['username'] ??
-                                              'No username',
-                                          style:
-                                          const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight:
-                                            FontWeight.bold,
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 50),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.book, size: 15),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            '${channel['numberquiz'] ?? 0} đề',
+                                            style: const TextStyle(color: Colors.grey),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Padding(
-                                    padding:
-                                    const EdgeInsets.only(
-                                      left: 50,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.book,
-                                          size: 15,
-                                        ),
-                                        const SizedBox(
-                                          width: 10,
-                                        ),
-                                        Text(
-                                          '${channel['numberquiz'] ?? 0} đề',
-                                          style:
-                                          const TextStyle(
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                ],
+                                    const SizedBox(height: 10),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );

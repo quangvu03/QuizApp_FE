@@ -115,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: imageUrl != "unknown.png"
                             ? ClipOval(
                           child: Image.network(
-                            "${BaseUrl.urlImage}/$imageUrl",
+                            "${BaseUrl.urlImage}$imageUrl",
                             fit: BoxFit.cover,
                             width: 60,
                             height: 60,
@@ -145,10 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                             ),
                           ),
-                          const Text(
-                            "Học sinh/ sinh viên",
-                            style: TextStyle(color: Colors.white70),
-                          ),
+                          // const Text(
+                          //   "Học sinh/ sinh viên",
+                          //   style: TextStyle(color: Colors.white70),
+                          // ),
                         ],
                       ),
                       const Spacer(),

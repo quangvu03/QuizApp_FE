@@ -1,30 +1,56 @@
+import 'dart:async';
+import 'dart:core';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:quizapp_fe/Page/createExam/QuestionScreen.dart';
 import 'package:quizapp_fe/entities/quiz.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
+import 'package:quizapp_fe/helpers/Url.dart';
 
-class CreateExamScreen extends StatefulWidget {
-  final int? idUser;
-  const CreateExamScreen(this.idUser, {Key? key}) : super(key: key);
+class UpdateExamScreen extends StatefulWidget {
+  final int idQuiz;
+
+  const UpdateExamScreen(this.idQuiz, {Key? key}) : super(key: key);
 
   @override
-  State<CreateExamScreen> createState() => _CreateExamScreenState();
+  State<UpdateExamScreen> createState() => _UpdateExamScreenState();
 }
 
-class _CreateExamScreenState extends State<CreateExamScreen> {
+class _UpdateExamScreenState extends State<UpdateExamScreen> {
   int _selectedImageIndex = 1;
   File? _pickedImage;
-  int? _idUser;
+  int? _idQuiz;
+  String? _currentImage;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  Map<String, dynamic>? _quizData;
 
   @override
   void initState() {
     super.initState();
-    _idUser = widget.idUser;
+    _idQuiz = widget.idQuiz;
+    _loadQuizData();
+  }
+
+  Future<void> _loadQuizData() async {
+    try {
+      final quizData = await QuizApiService().fetchQuizDetailRaw(widget.idQuiz);
+      setState(() {
+        _quizData = quizData;
+        _titleController.text = quizData['title'] ?? '';
+        _descriptionController.text = quizData['content'] ?? '';
+        _currentImage = quizData['image'];
+
+        const imagePaths = ['bgrQuiz1.png', 'bgrQuiz2.png', 'bgrQuiz3.png'];
+        int index = imagePaths.indexOf(_currentImage ?? '') + 1;
+        _selectedImageIndex = index > 0 ? index : 1;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi khi tải dữ liệu đề thi: $e')),
+      );
+    }
   }
 
   @override
@@ -101,6 +127,12 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_quizData == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -126,12 +158,10 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                         end: Alignment.bottomCenter,
                         colors: [Color(0xFFAB47BC), Color(0xFFCE93D8)],
                       ),
-                      border: Border(
-                          bottom: BorderSide(color: Colors.black, width: 1)),
+                      border: Border(bottom: BorderSide(color: Colors.black, width: 1)),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                       child: _buildAppBar(),
                     ),
                   ),
@@ -174,22 +204,10 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     return SafeArea(
       child: Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.8),
-            ),
-            // child: IconButton(
-            //   icon: const Icon(Icons.arrow_back, color: Colors.black54),
-            //   onPressed: () {
-            //     Navigator.pop(context);
-            //   },
-            // ),
-          ),
           const Expanded(
             child: Center(
               child: Text(
-                'Tạo đề thi',
+                'Sửa đề thi',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -216,7 +234,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   }
 
   Widget _buildImagePreview() {
-    final imagePaths = [
+    const imagePaths = [
       'assets/images/quiz/bgrQuiz1.png',
       'assets/images/quiz/bgrQuiz2.png',
       'assets/images/quiz/bgrQuiz3.png',
@@ -228,24 +246,37 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade400, width: 2),
-        image: DecorationImage(
-          image: _pickedImage != null
-              ? FileImage(_pickedImage!) as ImageProvider<Object>
-              : AssetImage(imagePaths[_selectedImageIndex - 1]) as ImageProvider<Object>,
+      ),
+      child: _pickedImage != null
+          ? Image.file(_pickedImage!, fit: BoxFit.cover)
+          : _selectedImageIndex == 0 && _currentImage != null
+          ? Image.network(
+        '${BaseUrl.urlImage}$_currentImage',
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          imagePaths[0],
           fit: BoxFit.cover,
         ),
+      )
+          : Image.asset(
+        imagePaths[_selectedImageIndex.clamp(1, 3) - 1],
+        fit: BoxFit.cover,
       ),
     );
   }
 
   Widget _buildImageSelector() {
+    const imagePaths = ['bgrQuiz1.png', 'bgrQuiz2.png', 'bgrQuiz3.png'];
+    bool isCurrentImageDefault = _currentImage != null && imagePaths.contains(_currentImage);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _buildUploadImageOption(),
+        if (!isCurrentImageDefault) _buildCurrentImageOption(),
         _buildImageOption(1),
         _buildImageOption(2),
-        _buildImageOption(3),
+        if (isCurrentImageDefault) _buildImageOption(3),
       ],
     );
   }
@@ -254,28 +285,61 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     return GestureDetector(
       onTap: _showImageSourceSelection,
       child: Container(
-        width: 72,
-        height: 72,
+        width: 60,
+        height: 60,
         decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.grey.shade400,
-            width: 1,
-            style: BorderStyle.solid,
-          ),
+          border: Border.all(color: Colors.grey.shade400, width: 1),
           borderRadius: BorderRadius.circular(8),
           image: _pickedImage != null
-              ? DecorationImage(
-            image: FileImage(_pickedImage!),
-            fit: BoxFit.cover,
-          )
+              ? DecorationImage(image: FileImage(_pickedImage!), fit: BoxFit.cover)
               : null,
         ),
         child: _pickedImage == null
-            ? const Center(
-          child: Icon(
-            Icons.camera_alt,
-            size: 30,
-            color: Colors.grey,
+            ? const Center(child: Icon(Icons.camera_alt, size: 24, color: Colors.grey))
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildCurrentImageOption() {
+    final bool isSelected = _selectedImageIndex == 0;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedImageIndex = 0;
+          _pickedImage = null;
+        });
+      },
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.transparent,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          image: _currentImage != null
+              ? DecorationImage(
+            image: NetworkImage('${BaseUrl.urlImage}$_currentImage'),
+            fit: BoxFit.cover,
+            onError: (exception, stackTrace) => const AssetImage('assets/images/quiz/bgrQuiz1.png'),
+          )
+              : null,
+        ),
+        child: _currentImage == null
+            ? const Center(child: Icon(Icons.image_not_supported, size: 24, color: Colors.grey))
+            : isSelected
+            ? Align(
+          alignment: Alignment.topRight,
+          child: Container(
+            margin: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(2),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.indigo,
+            ),
+            child: const Icon(Icons.check, color: Colors.white, size: 14),
           ),
         )
             : null,
@@ -285,8 +349,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
   Widget _buildImageOption(int index) {
     final bool isSelected = _selectedImageIndex == index;
-
-    final imagePaths = [
+    const imagePaths = [
       'assets/images/quiz/bgrQuiz1.png',
       'assets/images/quiz/bgrQuiz2.png',
       'assets/images/quiz/bgrQuiz3.png',
@@ -300,8 +363,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         });
       },
       child: Container(
-        width: 72,
-        height: 72,
+        width: 60,
+        height: 60,
         decoration: BoxDecoration(
           border: Border.all(
             color: isSelected ? Colors.blue : Colors.transparent,
@@ -323,11 +386,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
               shape: BoxShape.circle,
               color: Colors.indigo,
             ),
-            child: const Icon(
-              Icons.check,
-              color: Colors.white,
-              size: 14,
-            ),
+            child: const Icon(Icons.check, color: Colors.white, size: 14),
           ),
         )
             : null,
@@ -374,10 +433,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ),
         ),
@@ -425,10 +481,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ),
         ),
@@ -451,9 +504,15 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           );
           return;
         }
-        if (_idUser == null) {
+        if (_quizData == null || _idQuiz == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không tìm thấy ID người dùng')),
+            const SnackBar(content: Text('Dữ liệu đề thi không hợp lệ')),
+          );
+          return;
+        }
+        if (_pickedImage != null && !await _pickedImage!.exists()) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('File ảnh không tồn tại')),
           );
           return;
         }
@@ -461,7 +520,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         final String title = _titleController.text;
         final String description = _descriptionController.text;
 
-        final imagePaths = [
+        const imagePaths = [
           'bgrQuiz1.png',
           'bgrQuiz2.png',
           'bgrQuiz3.png',
@@ -471,31 +530,48 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         File? avatar;
         if (_pickedImage != null) {
           avatar = _pickedImage;
-        } else if (_selectedImageIndex > 0) {
+          image = null;
+        } else if (_selectedImageIndex > 0 && _selectedImageIndex <= 3) {
           image = imagePaths[_selectedImageIndex - 1];
+          avatar = null;
+        } else {
+          image = _currentImage;
+          avatar = null;
         }
 
         final quiz = Quiz(
-          userId: _idUser,
+          id: _idQuiz,
           content: description,
           title: title,
           image: image,
         );
+
         try {
-          final data = await saveQuiz(quiz, avatar);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => QuestionScreen(dataQuiz: data),
-            ),
-          );
-        } catch (e) {
+          print('Sending quiz: id=${quiz.id}, title=${quiz.title}, content=${quiz.content}, image=${quiz.image}, avatar=${avatar?.path}');
+          final data = await QuizApiService().updateQuiz(quiz, avatar);
+          print('Response data: $data');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi khi lưu đề thi: $e')),
+            const SnackBar(content: Text('Cập nhật đề thi thành công')),
+          );
+          // Đợi 2 giây để SnackBar hiển thị, sau đó pop về trang trước
+          await Future.delayed(const Duration(seconds: 2));
+          Navigator.pop(context);
+        } catch (e) {
+          print('Error updating quiz: $e');
+          String errorMessage = 'Lỗi khi cập nhật đề thi';
+          if (e.toString().contains('SocketException')) {
+            errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối.';
+          } else if (e.toString().contains('FormatException')) {
+            errorMessage = 'Lỗi định dạng dữ liệu từ server.';
+          } else if (e.toString().contains('Failed to update quiz')) {
+            errorMessage = e.toString().split('Error: ').last;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$errorMessage')),
           );
         }
       },
-      borderRadius: BorderRadius.circular(12), // Đồng bộ với borderRadius của Container
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         width: double.infinity,
         height: 56,
@@ -508,7 +584,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         ),
         child: const Center(
           child: Text(
-            'Lưu',
+            'Sửa',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -518,13 +594,5 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         ),
       ),
     );
-  }
-
-  Future<Map<String, dynamic>> saveQuiz(Quiz quiz, File? avatar) async {
-
-    QuizApiService quizApiService = QuizApiService();
-    final dataReturn = await quizApiService.createQuiz(quiz, avatar);
-    print("object::: $dataReturn");
-    return dataReturn;
   }
 }

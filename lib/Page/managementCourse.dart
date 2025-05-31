@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/createExam/createExam.dart';
 import 'package:quizapp_fe/Page/discoverCourse.dart';
+import 'package:quizapp_fe/Page/exam/ListCourseByUser.dart';
 import 'package:quizapp_fe/Page/infor.dart';
 import 'package:quizapp_fe/entities/user.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
@@ -8,6 +9,7 @@ import 'package:quizapp_fe/model/account_api.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
 import 'package:quizapp_fe/model/take_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:quizapp_fe/Page/details/details.dart';
 
 class managementCourse extends StatefulWidget {
   const managementCourse({super.key});
@@ -20,13 +22,13 @@ class _managementCoursePageState extends State<managementCourse> {
   int _selectedIndex = 0;
   int _selectedTabIndex = 0;
   final ScrollController _scrollController = ScrollController();
-  final ScrollController _tabScrollController =
-  ScrollController();
+  final ScrollController _tabScrollController = ScrollController();
 
   final GlobalKey _thongTinKey = GlobalKey();
   final GlobalKey _quanLyKey = GlobalKey();
   final GlobalKey _deThiMoiNhatKey = GlobalKey();
   final GlobalKey _danhMucDeThiKey = GlobalKey();
+  List<Map<String, dynamic>> dataCourse = [];
 
   String name = "Noname";
   String imageUrl = "unknownUser.png";
@@ -37,7 +39,22 @@ class _managementCoursePageState extends State<managementCourse> {
   @override
   void initState() {
     super.initState();
-    _loadUser();
+    _loadUser().then((_) => _fetchData());
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      QuizApiService quizApiService = QuizApiService();
+      final courses = await quizApiService.fetchQuizzesByUsername(name);
+      setState(() {
+        dataCourse = courses;
+      });
+      print("dataCourse: $dataCourse");
+    } catch (e) {
+      setState(() {
+        dataCourse = [];
+      });
+    }
   }
 
   @override
@@ -53,7 +70,7 @@ class _managementCoursePageState extends State<managementCourse> {
       final RenderBox renderBox = context.findRenderObject() as RenderBox;
       final position = renderBox.localToGlobal(Offset.zero).dy;
       _scrollController.animateTo(
-        position + _scrollController.offset - 100, // Adjust for header
+        position + _scrollController.offset - 100,
         duration: Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
@@ -61,7 +78,7 @@ class _managementCoursePageState extends State<managementCourse> {
   }
 
   void _scrollTabToCenter(int index) {
-    const double tabWidth = 120; // Approximate width of each tab
+    const double tabWidth = 120;
     final double offset = index * tabWidth -
         (MediaQuery.of(context).size.width / 2) +
         (tabWidth / 2);
@@ -83,7 +100,6 @@ class _managementCoursePageState extends State<managementCourse> {
     User datausser = await accountApi.checkUsername(username!);
 
     final data = await quizApiService.findAllbyUserId(datausser.id!);
-
     final _countTakesByQuizCreator = await takeApi.countTakesByQuizCreator(datausser.id!);
     print("object: ${data.length}");
     setState(() {
@@ -108,7 +124,7 @@ class _managementCoursePageState extends State<managementCourse> {
       setState(() {
         _selectedIndex = 0;
       });
-    } else if (index == 1) { // Index 1 corresponds to 'Khám phá'
+    } else if (index == 1) {
       setState(() {
         _selectedIndex = 1;
       });
@@ -144,16 +160,9 @@ class _managementCoursePageState extends State<managementCourse> {
         child: SafeArea(
           child: Column(
             children: [
-              // Top Header (from HomeScreen)
               _buildTopHeader(),
-
-              // User Stats Row
               _buildUserStatsRow(),
-
-              // Navigation Tabs
               _buildNavigationTabs(),
-
-              // Main Content
               Expanded(
                 child: SingleChildScrollView(
                   controller: _scrollController,
@@ -468,7 +477,7 @@ class _managementCoursePageState extends State<managementCourse> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Quản lý',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
           Row(
             children: [
               Expanded(
@@ -487,7 +496,7 @@ class _managementCoursePageState extends State<managementCourse> {
           const SizedBox(height: 16),
           _buildActionCard(
               Icons.lightbulb_outline, 'Tạo đề thi', Colors.orange, () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) =>  CreateExamScreen( _idUser),));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => CreateExamScreen(_idUser)));
           }),
         ],
       ),
@@ -500,22 +509,175 @@ class _managementCoursePageState extends State<managementCourse> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Đề thi mới nhất',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Card(
-            margin: const EdgeInsets.only(top: 8),
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            child: const ListTile(
-              leading: CircleAvatar(
-                backgroundImage: NetworkImage('https://images.prismic.io/quizlet-web/ZTcyN2EwOTgtYTMwYS00Yjg2LWEyOTEtZDMyMjNlNWVhM2Rj_c9d02594-613e-43a1-895e-bdfe2e956c87_group1534.png?auto=compress,format&rect=0,0,992,624&w=992&h=624'),
-                radius: 20,
-              ),
-              title: Text('ta1'),
-              subtitle: Text('Vũ aba'),
-              trailing:
-              Text('Xem thêm', style: TextStyle(color: Colors.blue)),
+          const Text(
+            'Đề thi mới nhất',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          dataCourse.isEmpty
+              ? const Center(
+            child: Text(
+              'Không có đề thi nào',
+              style: TextStyle(fontSize: 16, color: Colors.white70),
             ),
+          )
+              : Column(
+            children: [
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: dataCourse.length > 6 ? 6 : dataCourse.length,
+                itemBuilder: (context, index) {
+                  final course = dataCourse[index];
+                  return InkWell(
+                    onTap: () {
+                      print("course['id']: ${course['id']}");
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QuizDetailPage(idquiz: course['id'], showOption: true,),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 5,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      color: Colors.white.withOpacity(0.9),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: course['image'] != null && course['image'].isNotEmpty
+                                  ? Image.network(
+                                '${BaseUrl.urlImage}${course['image']}',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Image.asset(
+                                  'assets/images/quiz/title.png',
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                                  : Image.asset(
+                                'assets/images/quiz/title.png',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    course['title'] ?? 'No title',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '${course['numberquiz'] ?? 0} câu',
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.blue,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: CircleAvatar(
+                                          radius: 12,
+                                          backgroundImage: course['imageUser'] != null &&
+                                              course['imageUser'].isNotEmpty
+                                              ? NetworkImage('${BaseUrl.urlImage}${course['imageUser']}')
+                                              : null,
+                                          backgroundColor: Colors.grey[200],
+                                          child: course['imageUser'] == null || course['imageUser'].isEmpty
+                                              ? const Icon(Icons.person, size: 12, color: Colors.grey)
+                                              : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        course['userName'] ?? 'Unknown',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (dataCourse.isNotEmpty)
+                Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    side: const BorderSide(color: Colors.white),
+                  ),
+                  color: Colors.transparent,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ListCourseByUserScreen(Username: name,  showOption: true,),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.pink[300],
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                          SizedBox(width: 4),
+                          Text(
+                            'Xem thêm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -526,13 +688,13 @@ class _managementCoursePageState extends State<managementCourse> {
     return const Padding(
       padding: EdgeInsets.all(16),
       child: Text('Danh mục đề thi sẽ được hiển thị tại đây.',
-          style: TextStyle(fontSize: 16, color: Colors.grey)),
+          style: TextStyle(fontSize: 16, color: Colors.white70)),
     );
   }
 
   Widget _buildActionCard(IconData icon, String title, Color color, VoidCallback onTap) {
     return GestureDetector(
-      onTap: onTap, // Gắn sự kiện onTap
+      onTap: onTap,
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

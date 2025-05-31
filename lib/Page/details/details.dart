@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/createExam/UpdateExam.dart';
 import 'package:quizapp_fe/Page/details/ExamSettingDialog.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
@@ -7,8 +8,9 @@ import 'dart:convert'; // Để parse JSON
 
 class QuizDetailPage extends StatefulWidget {
   final int idquiz;
+  final bool showOption;
 
-  const QuizDetailPage({Key? key, required this.idquiz}) : super(key: key);
+  const QuizDetailPage({Key? key, required this.idquiz, this.showOption = false}) : super(key: key);
 
   @override
   _QuizDetailPageState createState() => _QuizDetailPageState();
@@ -23,6 +25,51 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
     super.initState();
     _quizDetail = QuizApiService().fetchQuizDetailRaw(widget.idquiz);
     _questions = QuizApiService().fetchQuizdemoQuiz(widget.idquiz);
+  }
+
+  void _showOptionsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.edit, color: Colors.grey),
+                  title: const Text('Chỉnh sửa đề thi'),
+                  onTap: () {
+                    Navigator.push(context, 
+                    MaterialPageRoute(builder: (context) => UpdateExamScreen(widget.idquiz),),
+                    );
+
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.edit, color: Colors.grey),
+                  title: const Text('Chỉnh sửa phần thi'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Implement update section functionality
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text('Xóa đề thi'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Implement delete quiz functionality
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -51,6 +98,8 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
               }
 
               final quiz = snapshot.data!;
+              final numberQuestion = quiz['numberQuestion'] ?? 0;
+
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -82,9 +131,15 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ),
                           ),
                         ),
+                        if (widget.showOption)
+                          GestureDetector(
+                            onTap: _showOptionsDialog,
+                            child: const Icon(Icons.more_vert, color: Colors.white),
+                          ),
                       ],
                     ),
                   ),
+                  // Quiz details container
                   Container(
                     margin: const EdgeInsets.only(top: 16),
                     decoration: BoxDecoration(
@@ -93,7 +148,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                     ),
                     child: Column(
                       children: [
-                        // Quiz image
                         Container(
                           margin: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -132,7 +186,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ],
                           ),
                         ),
-                        // Quiz title
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
@@ -144,7 +197,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ),
                           ),
                         ),
-                        // Quiz details
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -152,7 +204,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                               const Icon(Icons.access_time, color: Colors.white, size: 16),
                               const SizedBox(width: 4),
                               Text(
-                                '${quiz['numberQuestion'] ?? 0} câu',
+                                '$numberQuestion câu',
                                 style: const TextStyle(color: Colors.white),
                               ),
                               const Spacer(),
@@ -160,7 +212,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ],
                           ),
                         ),
-                        // Date
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Row(
@@ -174,14 +225,15 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ],
                           ),
                         ),
-                        // Action buttons
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: () {
+                                  onPressed: numberQuestion == 0
+                                      ? null // Vô hiệu hóa nếu không có câu hỏi
+                                      : () {
                                     showDialog(
                                       context: context,
                                       builder: (BuildContext context) {
@@ -240,6 +292,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                       ],
                     ),
                   ),
+                  // User info container
                   Container(
                     margin: const EdgeInsets.only(top: 16),
                     padding: const EdgeInsets.all(16),
@@ -310,6 +363,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                       ],
                     ),
                   ),
+                  // Questions section
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
                     child: Column(
@@ -331,34 +385,55 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                           ),
                         ),
                         _buildSection('Phần 1'),
-                        FutureBuilder<List<Map<String, dynamic>>>(
-                          future: _questions,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
-                            } else if (snapshot.hasError) {
-                              return const Center(child: Text('Lỗi khi tải câu hỏi'));
-                            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                              return const Center(child: Text('Không có câu hỏi'));
-                            }
+                        if (numberQuestion == 0)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: Text(
+                                'Không có câu hỏi cho đề thi',
+                                style: TextStyle(fontSize: 16, color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        else
+                          FutureBuilder<List<Map<String, dynamic>>>(
+                            future: _questions,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Center(child: CircularProgressIndicator());
+                              } else if (snapshot.hasError) {
+                                return const Center(child: Text('Lỗi khi tải câu hỏi'));
+                              }
 
-                            final questions = snapshot.data!;
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: questions.length,
-                              itemBuilder: (context, index) {
-                                final question = questions[index];
-                                final answers = List<Map<String, dynamic>>.from(question['answers'] ?? []);
-                                return _buildQuestionItem(
-                                  index + 1,
-                                  question['content'] ?? '[]',
-                                  answers.map((answer) => answer['content']?.toString() ?? '[]').toList(),
+                              final questions = snapshot.data ?? [];
+                              if (questions.isEmpty) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  child: Center(
+                                    child: Text(
+                                      'Không có câu hỏi',
+                                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                                    ),
+                                  ),
                                 );
-                              },
-                            );
-                          },
-                        ),
+                              }
+
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: questions.length,
+                                itemBuilder: (context, index) {
+                                  final question = questions[index];
+                                  final answers = List<Map<String, dynamic>>.from(question['answers'] ?? []);
+                                  return _buildQuestionItem(
+                                    index + 1,
+                                    question['content'] ?? '[]',
+                                    answers.map((answer) => answer['content']?.toString() ?? '[]').toList(),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                       ],
                     ),
                   ),
@@ -474,8 +549,8 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
-                  const quill.VerticalSpacing(2, 2),         // spacing
-                  const quill.VerticalSpacing(0, 0),         // lineSpacing
+                  const quill.VerticalSpacing(2, 2), // spacing
+                  const quill.VerticalSpacing(0, 0), // lineSpacing
                   null,
                 ),
               ),
@@ -535,9 +610,9 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                       fontSize: 14,
                       color: Colors.black87,
                     ),
-                    const quill.VerticalSpacing(2, 2),         // spacing
-                    const quill.VerticalSpacing(0, 0),         // lineSpacing
-                    null,                   // padding
+                    const quill.VerticalSpacing(2, 2), // spacing
+                    const quill.VerticalSpacing(0, 0), // lineSpacing
+                    null, // padding
                   ),
                 ),
               ),
