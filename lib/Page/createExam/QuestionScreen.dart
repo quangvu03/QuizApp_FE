@@ -29,6 +29,7 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
     });
   }
 
+
   bool _isFirstBuild = true;
 
   @override
@@ -59,17 +60,17 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
       _questionsFuture = id != null
           ? QuizApiService().getExam(id).then((data) {
         final list = List<Map<String, dynamic>>.from(data['examQuizDTO'] ?? []);
-        print("DATA LOADED: $list");
+        // print("DATA LOADED: $list");
         return list;
       }).catchError((e) {
-        print('Error initializing questions: $e');
+        // print('Error initializing questions: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi khi tải câu hỏi: $e')),
         );
         return <Map<String, dynamic>>[];
       })
           : Future.value([]);
-      print("_questionsFuture:: ${_questionsFuture.toString()}");
+      // print("_questionsFuture:: ${_questionsFuture.toString()}");
     });
   }
 
@@ -81,14 +82,14 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
         final list = List<Map<String, dynamic>>.from(data['examQuizDTO'] ?? []);
         return list;
       }).catchError((e) {
-        print('Error initializing questions: $e');
+        // print('Error initializing questions: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi khi tải câu hỏi: $e')),
         );
         return <Map<String, dynamic>>[];
       })
           : Future.value([]);
-      print("_questionsFuture:: ${_questionsFuture.toString()}");
+      // print("_questionsFuture:: ${_questionsFuture.toString()}");
     });
   }
 

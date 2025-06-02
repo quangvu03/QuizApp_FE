@@ -18,7 +18,7 @@ class managementCourse extends StatefulWidget {
   _managementCoursePageState createState() => _managementCoursePageState();
 }
 
-class _managementCoursePageState extends State<managementCourse> {
+class _managementCoursePageState extends State<managementCourse> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   int _selectedTabIndex = 0;
   final ScrollController _scrollController = ScrollController();
@@ -39,26 +39,58 @@ class _managementCoursePageState extends State<managementCourse> {
   @override
   void initState() {
     super.initState();
-    _loadUser().then((_) => _fetchData());
+    WidgetsBinding.instance.addObserver(this);
+    _refreshData();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    print("AppLifecycleState: $state");
+    if (state == AppLifecycleState.resumed && mounted) {
+      print("Refreshing data on resume");
+      _refreshData();
+    }
+  }
+
+  Future<void> _refreshData() async {
+    try {
+      await _loadUser().then((_) => _fetchData());
+      if (mounted) {
+        print("Data refreshed successfully: $dataCourse");
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi làm mới dữ liệu: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _fetchData() async {
     try {
       QuizApiService quizApiService = QuizApiService();
       final courses = await quizApiService.fetchQuizzesByUsername(name);
-      setState(() {
-        dataCourse = courses;
-      });
+      if (mounted) {
+        setState(() {
+          dataCourse = courses;
+        });
+      }
       print("dataCourse: $dataCourse");
     } catch (e) {
-      setState(() {
-        dataCourse = [];
-      });
+      if (mounted) {
+        setState(() {
+          dataCourse = [];
+        });
+      }
+      print("Error fetching data: $e");
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     _tabScrollController.dispose();
     super.dispose();
@@ -102,13 +134,15 @@ class _managementCoursePageState extends State<managementCourse> {
     final data = await quizApiService.findAllbyUserId(datausser.id!);
     final _countTakesByQuizCreator = await takeApi.countTakesByQuizCreator(datausser.id!);
     print("object: ${data.length}");
-    setState(() {
-      _idUser = datausser.id;
-      name = username ?? "Noname";
-      imageUrl = avatar ?? "unknownUser.png";
-      _numberQuiz = data.length;
-      countTakesByQuizCreator = _countTakesByQuizCreator as int?;
-    });
+    if (mounted) {
+      setState(() {
+        _idUser = datausser.id;
+        name = username ?? "Noname";
+        imageUrl = avatar ?? "unknownUser.png";
+        _numberQuiz = data.length;
+        countTakesByQuizCreator = _countTakesByQuizCreator as int?;
+      });
+    }
   }
 
   void _onItemTapped(int index) async {
@@ -120,7 +154,10 @@ class _managementCoursePageState extends State<managementCourse> {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const ProfilePage()),
-      );
+      ).then((_) {
+        print("Popped back from ProfilePage");
+        _refreshData();
+      });
       setState(() {
         _selectedIndex = 0;
       });
@@ -132,7 +169,10 @@ class _managementCoursePageState extends State<managementCourse> {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const DiscoverCourse()),
-      );
+      ).then((_) {
+        print("Popped back from DiscoverCourse");
+        _refreshData();
+      });
       setState(() {
         _selectedIndex = 0;
       });
@@ -164,28 +204,32 @@ class _managementCoursePageState extends State<managementCourse> {
               _buildUserStatsRow(),
               _buildNavigationTabs(),
               Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        key: _thongTinKey,
-                        child: _buildThongTinSection(),
-                      ),
-                      Container(
-                        key: _quanLyKey,
-                        child: _buildQuanLySection(),
-                      ),
-                      Container(
-                        key: _deThiMoiNhatKey,
-                        child: _buildDeThiMoiNhatSection(),
-                      ),
-                      Container(
-                        key: _danhMucDeThiKey,
-                        child: _buildDanhMucDeThiSection(),
-                      ),
-                    ],
+                child: RefreshIndicator(
+                  onRefresh: _refreshData,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          key: _thongTinKey,
+                          child: _buildThongTinSection(),
+                        ),
+                        Container(
+                          key: _quanLyKey,
+                          child: _buildQuanLySection(),
+                        ),
+                        Container(
+                          key: _deThiMoiNhatKey,
+                          child: _buildDeThiMoiNhatSection(),
+                        ),
+                        Container(
+                          key: _danhMucDeThiKey,
+                          child: _buildDanhMucDeThiSection(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -496,7 +540,11 @@ class _managementCoursePageState extends State<managementCourse> {
           const SizedBox(height: 16),
           _buildActionCard(
               Icons.lightbulb_outline, 'Tạo đề thi', Colors.orange, () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => CreateExamScreen(_idUser)));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => CreateExamScreen(_idUser))).then((_) {
+              // Refresh khi pop về từ CreateExamScreen
+              print("Popped back from CreateExamScreen");
+              _refreshData();
+            });
           }),
         ],
       ),
@@ -535,9 +583,15 @@ class _managementCoursePageState extends State<managementCourse> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => QuizDetailPage(idquiz: course['id'], showOption: true,),
+                          builder: (context) => QuizDetailPage(idquiz: course['id'], showOption: true),
                         ),
-                      );
+                      ).then((value) {
+                        print("Popped back from QuizDetailPage with value: $value");
+                        // Refresh nếu xóa đề thi thành công
+                        if (value == true) {
+                          _refreshData();
+                        }
+                      });
                     },
                     child: Card(
                       shape: RoundedRectangleBorder(
@@ -650,9 +704,15 @@ class _managementCoursePageState extends State<managementCourse> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ListCourseByUserScreen(Username: name,  showOption: true,),
+                          builder: (context) => ListCourseByUserScreen(Username: name, showOption: true),
                         ),
-                      );
+                      ).then((value) {
+                        print("Popped back from ListCourseByUserScreen with value: $value");
+                        // Refresh nếu xóa đề thi từ ListCourseByUserScreen
+                        if (value == true) {
+                          _refreshData();
+                        }
+                      });
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),

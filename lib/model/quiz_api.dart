@@ -336,6 +336,26 @@
       }
     }
 
+    Future<String> deleteQuiz(int id) async {
+      try {
+        final response = await http.delete(
+          Uri.parse('${BaseUrl.url}/quiz/delete/$id'),
+          headers: {'Content-Type': 'application/json'},
+        );
+
+        print('${BaseUrl.url}/quiz/delete/$id');
+        print('Response status: ${response.statusCode}');
+        if (response.statusCode == 200) {
+          return 'success';
+        } else if (response.statusCode == 400) {
+          return jsonDecode(response.body); // Lấy message lỗi từ server
+        } else {
+          return 'Không tìm thấy Quiz với ID: $id';
+        }
+      } catch (e) {
+        throw Exception('Lỗi khi xóa Quiz: $e');
+      }
+    }
 
 
   }

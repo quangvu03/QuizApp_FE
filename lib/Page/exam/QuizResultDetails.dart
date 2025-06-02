@@ -48,13 +48,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     _listTake = widget.listTake;
     _number = 1;
     _examQuizList = widget.examQuizList;
-    printexam();
     _idTake = widget.idTake;
   }
 
-  void printexam(){
-   print("object####: $_examQuizList");
-  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
