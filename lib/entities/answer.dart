@@ -27,6 +27,16 @@ class Answer {
     };
   }
 
+  Map<String, dynamic> toMapWithoutId() {
+    return {
+      'quizId': quizId,
+      'questionId': questionId,
+      'correct': correct,
+      'content': content,
+    };
+  }
+
+
   factory Answer.fromMap(Map<String, dynamic> map) {
     return Answer(
       id: map['id'],

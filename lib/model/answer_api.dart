@@ -38,5 +38,48 @@ class AnswerApi {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>> updateAnswers({
+    required List<int> oldAnswerIds,
+    required List<Answer> updatedAnswers,
+  }) async {
+    try {
+      List<Map<String, dynamic>> answerDTOs = updatedAnswers.map((answer) => answer.toMapWithoutId()).toList();
+      print("Dữ liệu gửi đi: ${json.encode({
+        "oldAnswerIds": oldAnswerIds,
+        "newAnswers": answerDTOs,
+      })}");
+
+      var response = await http.put(
+        Uri.parse("${BaseUrl.url}/answer/updateAnswers"),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          "oldAnswerIds": oldAnswerIds,
+          "newAnswers": answerDTOs,
+        }),
+      );
+
+      print("url: ${Uri.parse("${BaseUrl.url}/answer/updateAnswers")}");
+      print("Mã trạng thái: ${response.statusCode}");
+      print("Phản hồi: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        print("Phản hồi từ server: $data");
+        if (data['result'] is List) {
+          return {"result": List<Map<String, dynamic>>.from(data['result'])};
+        } else {
+          print("Lỗi: Định dạng phản hồi không hợp lệ - ${data['result']}");
+          return {"error": "Định dạng phản hồi không hợp lệ: ${data['result']}"};
+        }
+      } else {
+        print("Lỗi từ server: ${response.statusCode} - ${response.body}");
+        return {"error": "Lỗi server: ${response.statusCode} - ${response.body}"};
+      }
+    } catch (e) {
+      print("Lỗi hệ thống: $e");
+      return {"error": "Lỗi hệ thống: $e"};
+    }
+  }
 }
 

@@ -75,7 +75,9 @@ class _QuestionTypeDialogState extends State<QuestionTypeDialog> {
                             isExpanded: true,
                             value: selectedQuestionType,
                             icon: const Icon(Icons.arrow_drop_down),
-                            items: ['1 đáp án', 'Nhiều đáp án', 'True/False']
+                            items: ['1 đáp án',
+                              // 'Nhiều đáp án',
+                              'True/False']
                                 .map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,

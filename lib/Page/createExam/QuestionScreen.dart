@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:quizapp_fe/Page/createExam/QuestionTypeDialog.dart';
+import 'package:quizapp_fe/Page/createExam/QuestionUpdatePage.dart';
 import 'package:quizapp_fe/main.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
 import 'dart:convert';
@@ -28,7 +29,6 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
       _refreshQuestions();
     });
   }
-
 
   bool _isFirstBuild = true;
 
@@ -60,17 +60,14 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
       _questionsFuture = id != null
           ? QuizApiService().getExam(id).then((data) {
         final list = List<Map<String, dynamic>>.from(data['examQuizDTO'] ?? []);
-        // print("DATA LOADED: $list");
         return list;
       }).catchError((e) {
-        // print('Error initializing questions: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi khi tải câu hỏi: $e')),
         );
         return <Map<String, dynamic>>[];
       })
           : Future.value([]);
-      // print("_questionsFuture:: ${_questionsFuture.toString()}");
     });
   }
 
@@ -82,14 +79,12 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
         final list = List<Map<String, dynamic>>.from(data['examQuizDTO'] ?? []);
         return list;
       }).catchError((e) {
-        // print('Error initializing questions: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi khi tải câu hỏi: $e')),
         );
         return <Map<String, dynamic>>[];
       })
           : Future.value([]);
-      // print("_questionsFuture:: ${_questionsFuture.toString()}");
     });
   }
 
@@ -384,7 +379,7 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
             style: TextStyle(
               color: isSelected ? Colors.blue : Colors.blue.withOpacity(0.6),
               fontSize: 18,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
@@ -397,6 +392,22 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
     final questionType = question['type'] as String;
     final questionTitle = question['title'] as String;
     final answers = List<Map<String, dynamic>>.from(question['answers'] ?? []);
+
+    // Map database type to UI type
+    String uiQuestionType;
+    switch (questionType) {
+      case 'tracnghiem':
+        uiQuestionType = '1 đáp án';
+        break;
+      case 'nhieudapan':
+        uiQuestionType = 'Nhiều đáp án';
+        break;
+      case 'dungsai':
+        uiQuestionType = 'True/False';
+        break;
+      default:
+        uiQuestionType = '1 đáp án';
+    }
 
     // Tạo QuillController cho nội dung câu hỏi
     QuillController questionController;
@@ -474,7 +485,7 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Loại: $questionType',
+                            'Loại: $uiQuestionType',
                             style: const TextStyle(
                               fontSize: 16,
                               color: Colors.black54,
@@ -588,16 +599,35 @@ class _QuestionScreenState extends State<QuestionScreen> with WidgetsBindingObse
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        // Giải phóng bộ nhớ
+                      onPressed: () async {
+                        // Giải phóng bộ nhớ trước khi chuyển trang
                         questionController.dispose();
                         for (var controller in answerControllers) {
                           controller.dispose();
                         }
+
+                        // Navigate to QuestionUpdatePage with question data
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QuestionUpdatePage(
+                              dataQuiz: _dataQuiz,
+                              questionType: uiQuestionType,
+                              questionData: question,
+                            ),
+                          ),
+                        );
+
+                        // Đóng dialog
+                        Navigator.of(context).pop();
+
+                        // Refresh questions if update was successful
+                        if (result != null) {
+                          _refreshQuestions();
+                        }
                       },
                       child: const Text(
-                        'Đóng',
+                        'Chỉnh sửa',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

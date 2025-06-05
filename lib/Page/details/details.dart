@@ -109,6 +109,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                           MaterialPageRoute(
                             builder: (context) => QuestionScreen(
                               dataQuiz: dataQuiz,
+                              // state: 'update',
                             ),
                           ),
                         );
