@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/createExam/createExam.dart';
 import 'package:quizapp_fe/Page/discoverCourse.dart';
 import 'package:quizapp_fe/Page/exam/ListCourseByUser.dart';
+import 'package:quizapp_fe/Page/favoriteCourse.dart';
 import 'package:quizapp_fe/Page/infor.dart';
 import 'package:quizapp_fe/entities/user.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
@@ -156,6 +158,66 @@ class _managementCoursePageState extends State<managementCourse> with WidgetsBin
         MaterialPageRoute(builder: (_) => const ProfilePage()),
       ).then((_) {
         print("Popped back from ProfilePage");
+        _refreshData();
+      });
+      setState(() {
+        _selectedIndex = 0;
+      });
+    } else if (index == 1) {
+      setState(() {
+        _selectedIndex = 1;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DiscoverCourse()),
+      ).then((_) {
+        print("Popped back from DiscoverCourse");
+        _refreshData();
+      });
+      setState(() {
+        _selectedIndex = 0;
+      });
+    } else if (index == 2) {
+      setState(() {
+        _selectedIndex = 1;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const FavoriteCourses()),
+      ).then((_) {
+        print("Popped back from DiscoverCourse");
+        _refreshData();
+      });
+      setState(() {
+        _selectedIndex = 0;
+      });
+    } else if (index == 0) {
+      setState(() {
+        _selectedIndex = 1;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      ).then((_) {
+        print("Popped back from DiscoverCourse");
+        _refreshData();
+      });
+      setState(() {
+        _selectedIndex = 0;
+      });
+    } else if (index == 1) {
+      setState(() {
+        _selectedIndex = 1;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DiscoverCourse()),
+      ).then((_) {
+        print("Popped back from DiscoverCourse");
         _refreshData();
       });
       setState(() {

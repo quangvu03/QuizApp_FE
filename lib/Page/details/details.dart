@@ -6,9 +6,11 @@ import 'package:quizapp_fe/entities/user.dart';
 import 'package:quizapp_fe/helpers/Toast_helper.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/account_api.dart';
+import 'package:quizapp_fe/model/favorite_api.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
-import 'dart:convert'; // Để parse JSON
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QuizDetailPage extends StatefulWidget {
   final int idquiz;
@@ -24,16 +26,21 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
   late Future<Map<String, dynamic>> _quizDetail;
   late Future<List<Map<String, dynamic>>> _questions;
   final QuizApiService _quizService = QuizApiService();
+  final FavoriteApi _favoriteApi = FavoriteApi();
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   User? _user;
+  int? _userId;
+  bool isLoading = true;
+  bool isFavorite = false; // Trạng thái yêu thích
+  String selectedTab = 'Xem trước'; // Trạng thái tab mặc định
 
   @override
   void initState() {
     super.initState();
     _quizDetail = QuizApiService().fetchQuizDetailRaw(widget.idquiz);
     _questions = QuizApiService().fetchQuizdemoQuiz(widget.idquiz);
+    _loadUserInfo();
     printDebugInfo();
-    _loadUser();
   }
 
   void printDebugInfo() async {
@@ -44,17 +51,19 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
     print("_questions : $questions");   // Đây là List<Map<String, dynamic>>
   }
 
-  Future<void> _loadUser() async {
-    final detail = await _quizDetail;
+  Future<void> _loadUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? username = prefs.getString('username');
 
-    String? username = detail['username'];
     if (username != null) {
       try {
         AccountApi accountApi = AccountApi();
-        User? user = await accountApi?.checkUsername(username);
+        final user = await accountApi.checkUsername(username);
         setState(() {
           _user = user;
+          _userId = user.id;
         });
+        _checkFavoriteStatus(); // Kiểm tra trạng thái yêu thích khi tải user
       } catch (e) {
         print("Error loading user: $e");
         ToastHelper.showError("Không thể tải thông tin người dùng");
@@ -63,6 +72,58 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
       print("usernull");
       ToastHelper.showError("Vui lòng đăng nhập lại");
       // Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    if (_userId != null) {
+      final favoriteStatus = await _favoriteApi.isQuizInUserFavorites(widget.idquiz, _userId!);
+      setState(() {
+        isFavorite = favoriteStatus ?? false; // Mặc định false nếu null
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_userId == null) {
+      ToastHelper.showError("Vui lòng đăng nhập để thực hiện hành động này");
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      if (isFavorite) {
+        // Xóa yêu thích
+        final success = await _favoriteApi.deleteFavorite(_userId!, widget.idquiz);
+        if (success) {
+          setState(() {
+            isFavorite = false;
+          });
+          ToastHelper.showSuccess("Đã xóa khỏi danh sách yêu thích");
+        } else {
+          ToastHelper.showError("Không thể xóa yêu thích");
+        }
+      } else {
+        // Thêm yêu thích
+        final result = await _favoriteApi.addFavorite(widget.idquiz, _userId!);
+        if (result != null) {
+          setState(() {
+            isFavorite = true;
+          });
+          ToastHelper.showSuccess("Đã thêm vào danh sách yêu thích");
+        } else {
+          ToastHelper.showError("Không thể thêm yêu thích");
+        }
+      }
+    } catch (e) {
+      ToastHelper.showError("Lỗi hệ thống: $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -92,31 +153,31 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                 ListTile(
                   leading: const Icon(Icons.edit, color: Colors.grey),
                   title: const Text('Chỉnh sửa phần thi'),
-                    onTap: () async {
-                      final quizDetail = await _quizDetail;
-                      final questions = await _questions;
-                      if (_user != null) {
-                        final Map<String, dynamic> dataQuiz = {
-                          'image': quizDetail['image'],
-                          'id': quizDetail['id'],
-                          'userId': _user!.id,
-                          'title': quizDetail['title'],
-                          'createdAt': DateTime.now(),
-                          'content': quizDetail['content'],
-                        };
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => QuestionScreen(
-                              dataQuiz: dataQuiz,
-                              // state: 'update',
-                            ),
+                  onTap: () async {
+                    final quizDetail = await _quizDetail;
+                    final questions = await _questions;
+                    if (_user != null) {
+                      final Map<String, dynamic> dataQuiz = {
+                        'image': quizDetail['image'],
+                        'id': quizDetail['id'],
+                        'userId': _user!.id,
+                        'title': quizDetail['title'],
+                        'createdAt': DateTime.now(),
+                        'content': quizDetail['content'],
+                      };
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QuestionScreen(
+                            dataQuiz: dataQuiz,
+                            // state: 'update',
                           ),
-                        );
-                      } else {
-                        ToastHelper.showError("Chưa tải xong dữ liệu quiz hoặc user");
-                      }
+                        ),
+                      );
+                    } else {
+                      ToastHelper.showError("Chưa tải xong dữ liệu quiz hoặc user");
                     }
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
@@ -189,7 +250,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
   @override
   Widget build(BuildContext context) {
     return ScaffoldMessenger(
-      key: _scaffoldMessengerKey, // Gắn GlobalKey cho ScaffoldMessenger
+      key: _scaffoldMessengerKey,
       child: Scaffold(
         body: Container(
           decoration: const BoxDecoration(
@@ -231,7 +292,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              Navigator.pop(context); // Navigate back
+                              Navigator.pop(context);
                             },
                             child: const Icon(Icons.arrow_back_ios, color: Colors.white),
                           ),
@@ -348,7 +409,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: numberQuestion == 0
-                                        ? null // Vô hiệu hóa nếu không có câu hỏi
+                                        ? null
                                         : () {
                                       showDialog(
                                         context: context,
@@ -397,9 +458,11 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                                     borderRadius: BorderRadius.circular(24),
                                   ),
                                   child: IconButton(
-                                    onPressed: () {},
-                                    icon: const Icon(Icons.favorite_border),
-                                    color: Colors.grey,
+                                    onPressed: _toggleFavorite,
+                                    icon: Icon(
+                                      Icons.favorite,
+                                      color: isFavorite ? Colors.red : Colors.grey,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -494,9 +557,8 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                             ),
                             child: Row(
                               children: [
-                                _buildTab('Xem trước', true),
-                                _buildTab('Đánh giá', false),
-                                _buildTab('Kết quả của tôi', false),
+                                _buildTab('Xem trước', selectedTab == 'Xem trước'),
+                                _buildTab('Thông tin mô tả', selectedTab == 'Thông tin mô tả'),
                               ],
                             ),
                           ),
@@ -511,7 +573,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                                 ),
                               ),
                             )
-                          else
+                          else if (selectedTab == 'Xem trước')
                             FutureBuilder<List<Map<String, dynamic>>>(
                               future: _questions,
                               builder: (context, snapshot) {
@@ -549,7 +611,12 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                                   },
                                 );
                               },
-                            ),
+                            )
+                          else if (selectedTab == 'Thông tin mô tả')
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                child: _buildDescriptionSection(quiz['content'] ?? ''),
+                              ),
                         ],
                       ),
                     ),
@@ -589,21 +656,28 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
 
   Widget _buildTab(String title, bool isActive) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          border: isActive
-              ? const Border(
-            bottom: BorderSide(color: Colors.blue, width: 2),
-          )
-              : null,
-        ),
-        child: Text(
-          title,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isActive ? Colors.blue : Colors.grey,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedTab = title; // Cập nhật tab được chọn
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: isActive
+                ? const Border(
+              bottom: BorderSide(color: Colors.blue, width: 2),
+            )
+                : null,
+          ),
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isActive ? Colors.blue : Colors.grey,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ),
       ),
@@ -624,7 +698,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
   }
 
   Widget _buildQuestionItem(int number, String questionJson, List<String> optionsJson) {
-    // Parse JSON content của câu hỏi
     late quill.Document doc;
     try {
       final deltaJson = jsonDecode(questionJson);
@@ -649,7 +722,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
             ),
           ),
           const SizedBox(height: 8),
-          // Hiển thị nội dung câu hỏi bằng QuillEditor.basic
           quill.QuillEditor.basic(
             configurations: quill.QuillEditorConfigurations(
               controller: questionController,
@@ -665,8 +737,8 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
-                  const quill.VerticalSpacing(2, 2), // spacing
-                  const quill.VerticalSpacing(0, 0), // lineSpacing
+                  const quill.VerticalSpacing(2, 2),
+                  const quill.VerticalSpacing(0, 0),
                   null,
                 ),
               ),
@@ -674,11 +746,10 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
             scrollController: ScrollController(),
           ),
           const SizedBox(height: 8),
-          // Hiển thị các đáp án
           ...List.generate(
             optionsJson.length,
                 (index) => _buildOptionItem(
-              String.fromCharCode(65 + index), // A, B, C, D...
+              String.fromCharCode(65 + index),
               optionsJson[index],
             ),
           ),
@@ -688,7 +759,6 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
   }
 
   Widget _buildOptionItem(String prefix, String optionJson) {
-    // Parse JSON content của đáp án
     late quill.Document doc;
     try {
       final deltaJson = jsonDecode(optionJson);
@@ -725,9 +795,9 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                       fontSize: 14,
                       color: Colors.black87,
                     ),
-                    const quill.VerticalSpacing(2, 2), // spacing
-                    const quill.VerticalSpacing(0, 0), // lineSpacing
-                    null, // padding
+                    const quill.VerticalSpacing(2, 2),
+                    const quill.VerticalSpacing(0, 0),
+                    null,
                   ),
                 ),
               ),
@@ -739,9 +809,21 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
     );
   }
 
+  Widget _buildDescriptionSection(String content) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        content.isNotEmpty ? content : 'Không có mô tả',
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
-    // Giải phóng tài nguyên
     super.dispose();
   }
 }

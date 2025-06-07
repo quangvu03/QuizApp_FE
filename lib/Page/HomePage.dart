@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:quizapp_fe/Page/discoverCourse.dart';
+import 'package:quizapp_fe/Page/favoriteCourse.dart';
 import 'package:quizapp_fe/Page/home/AchievementCarousel.dart';
 import 'package:quizapp_fe/Page/home/Feeback.dart';
 import 'package:quizapp_fe/Page/home/favoritetestCourse.dart';
 import 'package:quizapp_fe/Page/home/menuCarousel.dart';
-import 'package:quizapp_fe/Page/home/recentTestsCarousel.dart';
 import 'package:quizapp_fe/Page/infor.dart';
 import 'package:quizapp_fe/Page/managementCourse.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
@@ -56,7 +56,20 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedIndex = 0;
       });
-    } else if (index == 3) {
+    } else if (index == 2) {
+      setState(() {
+        _selectedIndex = 2;
+      });
+      print("select: $_selectedIndex");
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const FavoriteCourses()),
+      );
+      setState(() {
+        _selectedIndex = 0;
+      });
+    }
+    else if (index == 3) {
       setState(() {
         _selectedIndex = 3;
       });
@@ -160,8 +173,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   const NewsCarousel(),
                   const SizedBox(height: 20),
                   const FavoriteTestsCarousel(),
-                  const SizedBox(height: 20),
-                  const RecentTestsCarousel(),
                   const SizedBox(height: 20),
                   const FeedbackCarousel(),
                   const SizedBox(height: 20),
@@ -284,7 +295,6 @@ class _NewsCarouselState extends State<NewsCarousel> {
         }
         setState(() {
           newsItems = data.cast<Map<String, dynamic>>().take(5).toList();
-          print('Fetched news: $newsItems');
           isLoading = false;
         });
       } else {

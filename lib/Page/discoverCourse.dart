@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/details/details.dart';
 import 'package:quizapp_fe/Page/exam/ListCourseByUser.dart';
+import 'package:quizapp_fe/Page/favoriteCourse.dart';
 import 'package:quizapp_fe/Page/infor.dart';
+import 'package:quizapp_fe/Page/managementCourse.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/quiz_api.dart';
 
@@ -63,8 +65,16 @@ class _DiscoverCourseState extends State<DiscoverCourse> {
       setState(() => _selectedIndex = 1);
     } else if (index == 2) {
       setState(() => _selectedIndex = 2);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const FavoriteCourses()),
+      );
     } else if (index == 3) {
       setState(() => _selectedIndex = 3);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const managementCourse()),
+      );
     } else if (index == 4) {
       setState(() => _selectedIndex = 4);
       await Navigator.push(

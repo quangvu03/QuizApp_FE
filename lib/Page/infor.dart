@@ -5,6 +5,8 @@ import 'package:quizapp_fe/Page/account/login.dart';
 import 'package:quizapp_fe/Page/account/profile.dart';
 import 'package:quizapp_fe/Page/admin/HomeAdmin.dart';
 import 'package:quizapp_fe/Page/discoverCourse.dart';
+import 'package:quizapp_fe/Page/favoriteCourse.dart';
+import 'package:quizapp_fe/Page/managementCourse.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:quizapp_fe/model/account_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,7 +45,7 @@ class _ProfilePageState extends State<ProfilePage> {
     } else if (index == 2) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => DiscoverCourse()),
+        MaterialPageRoute(builder: (_) => FavoriteCourses()),
       );
       await _loadUsername();
       setState(() {
@@ -57,7 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
     } else if (index == 3) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ChangePasswordPage()),
+        MaterialPageRoute(builder: (_) => managementCourse()),
       );
       setState(() {
         _selectedIndex = index;
