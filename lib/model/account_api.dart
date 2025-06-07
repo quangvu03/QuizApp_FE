@@ -50,7 +50,6 @@ class AccountApi {
         throw Exception("Bad request - Status code: ${response.statusCode}");
       }
     } catch (e) {
-      // print("checkUsername - Exception: $e");
       rethrow;
     }
   }
@@ -83,8 +82,6 @@ class AccountApi {
         Uri.parse(
             "${BaseUrl.url}/account/login?username=$username&password=$password"),
       );
-      // print(Uri.parse(
-      //     "${BaseUrl.url}/account/login?username=$username&password=$password"));
       if (response.statusCode == 200) {
         dynamic res = jsonDecode(response.body);
         // Nếu res chứa key "result" và giá trị là "not found", ném exception
@@ -210,6 +207,31 @@ class AccountApi {
       }
     } catch (e) {
       return {'error': 'Failed to upload avatar: $e'};
+    }
+  }
+
+  Future<List<User>> findAll() async {
+    try {
+      var response = await http.get(
+        Uri.parse("${BaseUrl.url}/account/findAll"),
+      );
+      if (response.statusCode == 200) {
+        dynamic res = jsonDecode(response.body);
+        if (!res.containsKey("result")) {
+          throw Exception("Invalid response: 'result' key not found");
+        }
+        if (res["result"] is! List) {
+          throw Exception("Invalid response: 'result' is not a list of users");
+        }
+        List<User> users = (res["result"] as List)
+            .map((userJson) => User.fromMap(userJson as Map<String, dynamic>))
+            .toList();
+        return users;
+      } else {
+        throw Exception("Bad request - Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 }

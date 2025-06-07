@@ -3,8 +3,10 @@ import 'package:quizapp_fe/Page/HomePage.dart';
 import 'package:quizapp_fe/Page/account/change_password.dart';
 import 'package:quizapp_fe/Page/account/login.dart';
 import 'package:quizapp_fe/Page/account/profile.dart';
+import 'package:quizapp_fe/Page/admin/HomeAdmin.dart';
 import 'package:quizapp_fe/Page/discoverCourse.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
+import 'package:quizapp_fe/model/account_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -18,6 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   int _selectedIndex = 4;
   String name = "Noname";
   String imageUrl = "unknown.png";
+  String role = "user";
 
   @override
   void initState() {
@@ -46,12 +49,12 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _selectedIndex = index;
       });
-    }else if(index == 1){
+    } else if (index == 1) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => DiscoverCourse()),
       );
-    }else if (index == 3) {
+    } else if (index == 3) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => ChangePasswordPage()),
@@ -72,9 +75,13 @@ class _ProfilePageState extends State<ProfilePage> {
     String? avatar = prefs.getString('avatar_path');
     print('Loaded username: $username, avatar: $avatar'); // Debug
 
+    AccountApi accountApi = AccountApi();
+
+    final data = await accountApi.checkUsername(username ?? "");
     setState(() {
       name = username ?? "Noname";
       imageUrl = avatar ?? "unknown.png";
+      role = data.role ?? "user"; // Cập nhật role từ API
     });
   }
 
@@ -153,9 +160,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                const Text(
-                                  'Học sinh/ sinh viên',
-                                  style: TextStyle(
+                                Text(
+                                  role == "admin"
+                                      ? 'Quản trị viên'
+                                      : 'Học sinh/ sinh viên',
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.black,
                                   ),
@@ -220,7 +229,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             builder: (context) => PersonalInfoScreen(),
                           ),
                         );
-                        await _loadUsername(); // Tải lại dữ liệu sau khi quay lại
+                        await _loadUsername();
                       },
                       iconColor: iconColor,
                       textColor: textColor,
@@ -273,6 +282,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       iconColor: iconColor,
                       textColor: textColor,
                     ),
+                    if (role == "admin") // Hiển thị nút Admin nếu role là admin
+                      _buildSettingsItem(
+                        icon: Icons.admin_panel_settings,
+                        text: 'Admin',
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => AdminQuizHomePage(userName : name),));
+                        },
+                        iconColor: iconColor,
+                        textColor: textColor,
+                      ),
                     _buildSettingsItem(
                       icon: Icons.offline_share,
                       text: "Đăng xuất",

@@ -541,7 +541,6 @@ class _managementCoursePageState extends State<managementCourse> with WidgetsBin
           _buildActionCard(
               Icons.lightbulb_outline, 'Tạo đề thi', Colors.orange, () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => CreateExamScreen(_idUser))).then((_) {
-              // Refresh khi pop về từ CreateExamScreen
               print("Popped back from CreateExamScreen");
               _refreshData();
             });

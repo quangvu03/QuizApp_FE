@@ -100,7 +100,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
   void _saveAndReturn() {
     // Trả về Delta JSON trực tiếp từ document
     final deltaJson = jsonEncode(_controller.document.toDelta().toJson());
-    print("detal: " +deltaJson);
+    print("detal: " + deltaJson);
     Navigator.pop(context, deltaJson);
   }
 
@@ -121,7 +121,7 @@ class _TextEditorPageState extends State<TextEditorPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.symmetric(horizontal: 10.0), // Chỉ giữ padding ngang
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -149,7 +149,15 @@ class _TextEditorPageState extends State<TextEditorPage> {
                   },
                   label: const Text("reset"),
                   icon: const Icon(Icons.import_export_rounded),
-                  // ...
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 3,
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: _pickAndCropImage,
@@ -173,6 +181,17 @@ class _TextEditorPageState extends State<TextEditorPage> {
             configurations: QuillSimpleToolbarConfigurations(
               controller: _controller,
               multiRowsDisplay: true,
+              showAlignmentButtons: false,
+              showBackgroundColorButton: false,
+              showListNumbers: false,
+              showUndo: false, // Ẩn nút Back (Undo)
+              showRedo: false, // Ẩn nút Forward (Redo)
+              showInlineCode: false,
+              showClipboardCut: false, // Ẩn nút Cut
+              showClipboardPaste: false, // Ẩn nút Paste
+              showClipboardCopy: false, // Ẩn nút Copy (bộ nhớ)
+              showHeaderStyle: false, // Ẩn nút Header Style
+              showQuote: false, // Ẩn nút Quote
             ),
           ),
           Expanded(

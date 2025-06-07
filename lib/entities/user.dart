@@ -8,7 +8,7 @@ class User{
   bool? status;
   String? email;
   String? phone;
-  int? role;
+  String? role;
   String? avatar;
 
   User({this.id, this.userName, this.password, this.fullName, this.status,

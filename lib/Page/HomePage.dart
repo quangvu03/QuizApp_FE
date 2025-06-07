@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:quizapp_fe/Page/discoverCourse.dart';
-import 'package:quizapp_fe/Page/home/Carousel.dart';
+import 'package:quizapp_fe/Page/home/AchievementCarousel.dart';
 import 'package:quizapp_fe/Page/home/Feeback.dart';
-import 'package:quizapp_fe/Page/home/achievementCarousel.dart';
 import 'package:quizapp_fe/Page/home/favoritetestCourse.dart';
 import 'package:quizapp_fe/Page/home/menuCarousel.dart';
 import 'package:quizapp_fe/Page/home/recentTestsCarousel.dart';
-import 'package:quizapp_fe/Page/home/collectionsCarousel.dart';
 import 'package:quizapp_fe/Page/infor.dart';
 import 'package:quizapp_fe/Page/managementCourse.dart';
 import 'package:quizapp_fe/helpers/Url.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,8 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedIndex = 0;
       });
-    }
-    else {
+    } else {
       setState(() {
         _selectedIndex = index;
       });
@@ -84,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       name = username ?? "Noname";
       imageUrl = avatar ?? "unknown.png";
+      isLoading = false;
     });
   }
 
@@ -145,10 +146,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                             ),
                           ),
-                          // const Text(
-                          //   "Học sinh/ sinh viên",
-                          //   style: TextStyle(color: Colors.white70),
-                          // ),
                         ],
                       ),
                       const Spacer(),
@@ -160,13 +157,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
                   const MenuCarousel(),
                   const SizedBox(height: 20),
-                  const CourseCarousel(),
+                  const NewsCarousel(),
                   const SizedBox(height: 20),
                   const FavoriteTestsCarousel(),
                   const SizedBox(height: 20),
                   const RecentTestsCarousel(),
-                  const SizedBox(height: 20),
-                  const CollectionsCarousel(),
                   const SizedBox(height: 20),
                   const FeedbackCarousel(),
                   const SizedBox(height: 20),
@@ -249,6 +244,203 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: _onItemTapped,
         backgroundColor: Colors.white.withOpacity(0.9),
       ),
+    );
+  }
+}
+
+class NewsCarousel extends StatefulWidget {
+  const NewsCarousel({super.key});
+
+  @override
+  _NewsCarouselState createState() => _NewsCarouselState();
+}
+
+class _NewsCarouselState extends State<NewsCarousel> {
+  List<Map<String, dynamic>> newsItems = [];
+  bool isLoading = true;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNews();
+  }
+
+  Future<void> _fetchNews() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    try {
+      final response = await http
+          .get(Uri.parse('${BaseUrl.url}/account/vnexpress'))
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data.isEmpty) {
+          throw Exception('Danh sách tin tức rỗng');
+        }
+        setState(() {
+          newsItems = data.cast<Map<String, dynamic>>().take(5).toList();
+          print('Fetched news: $newsItems');
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Lỗi khi tải tin tức: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Không thể tải tin tức: $e';
+        print('Fetch error: $e');
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    if (url.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Link bài báo không hợp lệ')),
+        );
+      }
+      return;
+    }
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể mở bài báo: $url')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tin tức THPT Quốc gia',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+        isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : errorMessage.isNotEmpty
+            ? Center(
+          child: Text(
+            errorMessage,
+            style: const TextStyle(color: Colors.red),
+          ),
+        )
+            : SizedBox(
+          height: 200,
+          child: newsItems.isEmpty
+              ? const Center(
+            child: Text(
+              'Không có tin tức',
+              style: TextStyle(color: Colors.white),
+            ),
+          )
+              : ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: newsItems.length,
+            itemBuilder: (context, index) {
+              final news = newsItems[index];
+              return GestureDetector(
+                onTap: () => _launchUrl(news['url'] ?? ''),
+                child: Container(
+                  width: 250,
+                  margin: const EdgeInsets.only(right: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12)),
+                        child: news['image'] != null &&
+                            news['image'].isNotEmpty
+                            ? Image.network(
+                          news['image'],
+                          height: 100,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error,
+                              stackTrace) =>
+                              Image.asset(
+                                'assets/images/quiz/title.png',
+                                height: 100,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                        )
+                            : Image.asset(
+                          'assets/images/quiz/title.png',
+                          height: 100,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              news['title'] ??
+                                  'Không có tiêu đề',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              news['description'] ??
+                                  'Không có mô tả',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
