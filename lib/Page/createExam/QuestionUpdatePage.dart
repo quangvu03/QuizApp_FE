@@ -706,7 +706,6 @@ class _QuestionUpdatePageState extends State<QuestionUpdatePage> {
                     );
                   }
 
-                  // Create list of old answer IDs
                   List<int> oldAnswerIds = [];
                   if (widget.questionData != null && widget.questionData!['answers'] != null) {
                     oldAnswerIds = List<Map<String, dynamic>>.from(widget.questionData!['answers'])
@@ -714,13 +713,17 @@ class _QuestionUpdatePageState extends State<QuestionUpdatePage> {
                         .toList();
                   }
 
-                  // Create Question object
+                  // Create Question object with explanation
                   Question question = Question(
                     id: widget.questionData?['id'],
                     quizId: widget.dataQuiz?['id'],
                     content: jsonEncode(questionController.document.toDelta().toJson()),
                     title: widget.questionData?['title'] ?? "Câu hỏi mới",
                     type: _mapQuestionType(widget.questionType),
+                    explanation: explanationController.document.isEmpty()
+                        ? null
+                        : jsonEncode(explanationController.document.toDelta().toJson()),
+                    createdAt: widget.questionData?['createdAt'] ?? DateTime.now().toIso8601String(),
                   );
 
                   try {
@@ -732,10 +735,7 @@ class _QuestionUpdatePageState extends State<QuestionUpdatePage> {
                     final questionApi = QuestionApi();
                     int? questionId;
                     if (widget.questionData != null && widget.questionData!['id'] != null) {
-                      print('widget.questionData: ${widget.questionData}'); // Debugging line
                       // Update existing question
-                      print('quétiom: ${question}'); // Debugging line
-
                       final questionResult = await questionApi.updateQuestion(question);
                       if (!questionResult) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -759,11 +759,12 @@ class _QuestionUpdatePageState extends State<QuestionUpdatePage> {
                     // Update questionId for answers
                     final updatedAnswers = listAnswer
                         .map((answer) => Answer(
-                      // id: answer.id,
+                      id: answer.id,
                       quizId: answer.quizId,
                       questionId: questionId,
                       correct: answer.correct,
                       content: answer.content,
+                      createdAt: answer.createdAt,
                     ))
                         .toList();
 

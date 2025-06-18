@@ -7,14 +7,17 @@ class Question {
   final String? type;
   final String? content;
   final String? createdAt;
+  final String? explanation; // Thêm cột explanation
 
-  Question(
-      {this.id,
-      this.quizId,
-      this.title,
-      this.type,
-      this.content,
-      this.createdAt});
+  Question({
+    this.id,
+    this.quizId,
+    this.title,
+    this.type,
+    this.content,
+    this.createdAt,
+    this.explanation, // Thêm vào constructor
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -24,6 +27,7 @@ class Question {
       'type': type,
       'content': content,
       'createdAt': createdAt,
+      'explanation': explanation, // Thêm vào map
     };
   }
 
@@ -35,11 +39,12 @@ class Question {
       type: map['type'],
       content: map['content'],
       createdAt: map['createdAt'],
+      explanation: map['explanation'], // Thêm vào fromMap
     );
   }
 
   @override
   String toString() {
-    return 'Answer{id: $id, quizId: $quizId, questionId: $title, correct: $type, content: $content, createdAt: $createdAt}';
+    return 'Question{id: $id, quizId: $quizId, title: $title, type: $type, content: $content, explanation: $explanation, createdAt: $createdAt}'; // Cập nhật toString
   }
 }

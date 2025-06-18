@@ -148,9 +148,9 @@ class _managementCoursePageState extends State<managementCourse> with WidgetsBin
   }
 
   void _onItemTapped(int index) async {
-    if (index == 3) {
+    if (index == 4) {
       setState(() {
-        _selectedIndex = 3;
+        _selectedIndex = 4;
       });
       print("select: $_selectedIndex");
       await Navigator.push(

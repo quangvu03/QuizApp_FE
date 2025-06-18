@@ -43,8 +43,10 @@ class _DiscoverCourseState extends State<DiscoverCourse> {
       final quizzes = await quizApiService.fetchAllQuizz();
       final userQuizzes = await quizApiService.fetchAllQuizzesByUser();
       setState(() {
-        dsde = quizzes;
-        dsnguoitao = userQuizzes;
+        // Lọc các đề thi có numberquiz > 0
+        dsde = quizzes.where((quiz) => (quiz['numberquiz'] ?? 0) > 0).toList();
+        // Lọc các kênh có numberquiz > 0
+        dsnguoitao = userQuizzes.where((user) => (user['numberquiz'] ?? 0) > 0).toList();
         isLoading = false;
       });
     } catch (e) {

@@ -54,6 +54,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
 
   String? question;
   String? type;
+  String? explanation; // Added to store explanation
   List<Map<String, dynamic>>? examQuizList;
   List<Map<String, dynamic>>? _shuffledExamQuizList;
   List<Map<String, dynamic>>? answers;
@@ -151,6 +152,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           ToastHelper.showError("Không tìm thấy câu hỏi cho bài kiểm tra này");
           question = "[]";
           type = "";
+          explanation = null; // Reset explanation
           answers = [];
           return;
         }
@@ -176,6 +178,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
         int questionIndex = _number! - 1;
         question = _shuffledExamQuizList![questionIndex]["content"] ?? "[]";
         type = _shuffledExamQuizList![questionIndex]["type"] ?? "";
+        explanation = _shuffledExamQuizList![questionIndex]["explanation"]; // Load explanation
         answers = List<Map<String, dynamic>>.from(_shuffledExamQuizList![questionIndex]["answers"] ?? []);
 
         int currentQuestionId = _shuffledExamQuizList![questionIndex]["id"];
@@ -198,6 +201,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
         ToastHelper.showError("Lỗi khi tải bài kiểm tra: $e");
         question = "[]";
         type = "";
+        explanation = null; // Reset explanation on error
         answers = [];
       });
     }
@@ -387,6 +391,26 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
       document: questionDoc,
       selection: const TextSelection.collapsed(offset: 0),
     );
+
+    // Prepare explanation document if it exists
+    quill.Document? explanationDoc;
+    quill.QuillController? explanationController;
+    if (explanation != null && explanation!.isNotEmpty) {
+      try {
+        final deltaJson = jsonDecode(explanation!);
+        explanationDoc = quill.Document.fromJson(deltaJson);
+        explanationController = quill.QuillController(
+          document: explanationDoc,
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+      } catch (e) {
+        explanationDoc = quill.Document()..insert(0, 'Giải thích không hợp lệ');
+        explanationController = quill.QuillController(
+          document: explanationDoc,
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+      }
+    }
 
     return WillPopScope(
       onWillPop: _showExitConfirmationDialog,
@@ -636,6 +660,60 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
                               );
                             },
                           ),
+                          // Display explanation in practice mode after answering, if it exists
+                          if (widget.examMode == 'practice' &&
+                              _hasAnswered &&
+                              explanation != null &&
+                              explanation!.isNotEmpty &&
+                              explanationController != null) ...[
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Giải thích:',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF673AB7),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(12.0),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    spreadRadius: 1,
+                                    blurRadius: 3,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: quill.QuillEditor.basic(
+                                configurations: quill.QuillEditorConfigurations(
+                                  controller: explanationController,
+                                  autoFocus: false,
+                                  enableInteractiveSelection: false,
+                                  scrollable: false,
+                                  padding: EdgeInsets.zero,
+                                  expands: false,
+                                  customStyles: quill.DefaultStyles(
+                                    paragraph: quill.DefaultTextBlockStyle(
+                                      const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                      const quill.VerticalSpacing(2, 2),
+                                      const quill.VerticalSpacing(0, 0),
+                                      null,
+                                    ),
+                                  ),
+                                ),
+                                scrollController: ScrollController(),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

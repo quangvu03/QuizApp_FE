@@ -419,21 +419,21 @@ class _NewsCarouselState extends State<NewsCarousel> {
                           crossAxisAlignment:
                           CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              news['title'] ??
-                                  'Không có tiêu đề',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            // Text(
+                            //   news['title'] ??
+                            //       'Không có tiêu đề',
+                            //   maxLines: 2,
+                            //   overflow: TextOverflow.ellipsis,
+                            //   style: const TextStyle(
+                            //     fontSize: 14,
+                            //     fontWeight: FontWeight.bold,
+                            //   ),
+                            // ),
                             const SizedBox(height: 4),
                             Text(
                               news['description'] ??
                                   'Không có mô tả',
-                              maxLines: 2,
+                              maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 12,

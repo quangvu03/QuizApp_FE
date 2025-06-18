@@ -40,7 +40,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
   @override
   void initState() {
     super.initState();
-    print("dsdsdsd: ${widget.dataQuiz}");
     if (widget.questionType == 'True/False') {
       options = [
         jsonEncode(Document().toDelta().toJson()), // Ô trống cho "Đúng"
@@ -81,7 +80,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
 
   void _syncLists() {
     if (options.length != optionControllers.length) {
-      print("Cảnh báo: Danh sách không đồng bộ! Đang đồng bộ...");
       while (optionControllers.length > options.length) {
         optionControllers.last.dispose();
         optionControllers.removeLast();
@@ -96,7 +94,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
             ),
           );
         } catch (e) {
-          print("Lỗi đồng bộ: $e");
           optionControllers.add(
             QuillController(
               document: Document(),
@@ -144,7 +141,7 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                   ),
                   Expanded(
                     child: Text(
-                      "Chỉnh sửa câu hỏi - ${widget.questionType}",
+                      "Tạo câu hỏi - ${widget.questionType}",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 20,
@@ -222,7 +219,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                   const TextSelection.collapsed(offset: 0),
                                 );
                               } catch (e) {
-                                print("Lỗi xử lý câu hỏi: $e");
                                 questionController = QuillController(
                                   document: Document()..insert(0, result),
                                   selection:
@@ -339,16 +335,20 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                                 selectedOption = null;
                                               } else if (selectedOption !=
                                                   null &&
-                                                  selectedOption! > index) {
+                                                  selectedOption! >
+                                                      index) {
                                                 selectedOption =
                                                     selectedOption! - 1;
                                               }
-                                            } else if (widget.questionType ==
+                                            } else if (widget
+                                                .questionType ==
                                                 'Nhiều đáp án') {
-                                              selectedOptions.remove(index);
+                                              selectedOptions
+                                                  .remove(index);
                                               selectedOptions =
                                                   selectedOptions
-                                                      .map((i) => i > index
+                                                      .map((i) => i >
+                                                      index
                                                       ? i - 1
                                                       : i)
                                                       .toList();
@@ -387,7 +387,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                                     .collapsed(offset: 0),
                                               );
                                         } catch (e) {
-                                          print("Lỗi xử lý đáp án $index: $e");
                                           options[index] = jsonEncode(
                                             (Document()..insert(0, result))
                                                 .toDelta()
@@ -501,7 +500,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                                   const TextSelection.collapsed(offset: 0),
                                 );
                               } catch (e) {
-                                print("Lỗi xử lý giải thích: $e");
                                 explanationController = QuillController(
                                   document: Document()..insert(0, result),
                                   selection:
@@ -541,7 +539,6 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
                 onPressed: () async {
-                  print("dâtaaQuiz: ${widget.dataQuiz}");
                   if (questionController.document.isEmpty()) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("Vui lòng nhập nội dung câu hỏi")),
@@ -568,7 +565,7 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                   }
 
                   // Tạo danh sách Answer (chưa có questionId)
-                  List<Answer> listanswer = [];
+                  List<Answer> listAnswer = [];
                   for (int index = 0; index < options.length; index++) {
                     bool correct;
                     if (widget.questionType == '1 đáp án') {
@@ -580,7 +577,7 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                           (index == 1 && selectedTrueFalse == false);
                     }
 
-                    listanswer.add(
+                    listAnswer.add(
                       Answer(
                         id: null,
                         quizId: widget.dataQuiz?['id'],
@@ -592,16 +589,24 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                     );
                   }
 
-                  // Tạo đối tượng Question
+                  // Tạo đối tượng Question với explanation
                   Question question = Question(
                     id: null,
                     quizId: widget.dataQuiz?['id'],
                     content: jsonEncode(questionController.document.toDelta().toJson()),
                     title: "Câu ${widget.dataQuiz?['questionCount'] != null ? widget.dataQuiz!['questionCount'] + 1 : 1}",
-                    type: _mapQuestionType(widget.questionType), // Sử dụng type đã ánh xạ
+                    type: _mapQuestionType(widget.questionType),
+                    explanation: explanationController.document.isEmpty()
+                        ? null
+                        : jsonEncode(explanationController.document.toDelta().toJson()),
+                    createdAt: DateTime.now().toIso8601String(),
                   );
 
                   try {
+                    setState(() {
+                      isProcessing = true;
+                    });
+
                     // Lưu câu hỏi trước
                     final questionApi = QuestionApi();
                     final questionResult = await questionApi.saveQuestion(question);
@@ -615,19 +620,21 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                     // Lấy questionId từ kết quả
                     final questionId = questionResult['idQuestion'] as int;
 
-                    // Cập nhật questionId cho listanswer
-                    listanswer = listanswer.map((answer) => Answer(
+                    // Cập nhật questionId cho listAnswer
+                    listAnswer = listAnswer
+                        .map((answer) => Answer(
                       id: answer.id,
                       quizId: answer.quizId,
                       questionId: questionId,
                       correct: answer.correct,
                       content: answer.content,
                       createdAt: answer.createdAt,
-                    )).toList();
+                    ))
+                        .toList();
 
                     // Lưu danh sách đáp án
                     final answerApi = AnswerApi();
-                    final answerResult = await answerApi.saveAnswers(listanswer);
+                    final answerResult = await answerApi.saveAnswers(listAnswer);
                     if (answerResult != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Lưu câu hỏi và đáp án thành công: ID $questionId")),
@@ -645,6 +652,10 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Lỗi khi lưu: $e")),
                     );
+                  } finally {
+                    setState(() {
+                      isProcessing = false;
+                    });
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -655,7 +666,9 @@ class _QuestionEditorPageState extends State<QuestionEditorPage> {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text(
+                child: isProcessing
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
                   "Lưu",
                   style: TextStyle(
                     fontSize: 16,

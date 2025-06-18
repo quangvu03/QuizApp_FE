@@ -562,7 +562,7 @@ class _QuizDetailPageState extends State<QuizDetailPage> {
                               ],
                             ),
                           ),
-                          _buildSection('Phần 1'),
+                          _buildSection('Nội dung'),
                           if (numberQuestion == 0)
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 16),
