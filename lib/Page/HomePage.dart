@@ -68,8 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedIndex = 0;
       });
-    }
-    else if (index == 3) {
+    } else if (index == 3) {
       setState(() {
         _selectedIndex = 3;
       });
@@ -128,24 +127,24 @@ class _HomeScreenState extends State<HomeScreen> {
                         backgroundColor: Colors.white,
                         child: imageUrl != "unknown.png"
                             ? ClipOval(
-                          child: Image.network(
-                            "${BaseUrl.urlImage}$imageUrl",
-                            fit: BoxFit.cover,
-                            width: 60,
-                            height: 60,
-                            errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              Icons.school_outlined,
-                              size: 30,
-                              color: Colors.blueAccent,
-                            ),
-                          ),
-                        )
+                                child: Image.network(
+                                  "${BaseUrl.urlImage}$imageUrl",
+                                  fit: BoxFit.cover,
+                                  width: 60,
+                                  height: 60,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(
+                                    Icons.school_outlined,
+                                    size: 30,
+                                    color: Colors.blueAccent,
+                                  ),
+                                ),
+                              )
                             : const Icon(
-                          Icons.school_outlined,
-                          size: 30,
-                          color: Colors.blueAccent,
-                        ),
+                                Icons.school_outlined,
+                                size: 30,
+                                color: Colors.blueAccent,
+                              ),
                       ),
                       const SizedBox(width: 12),
                       Column(
@@ -179,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     height: 300,
                     decoration: BoxDecoration(
-                      color: Colors.pink[100]?.withOpacity(0.8),
+                      color: Colors.blue[100], // Xanh da trời nhạt
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -189,10 +188,97 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    child: const Center(
-                      child: Text(
-                        'Nội dung khác',
-                        style: TextStyle(color: Colors.white),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0), // Giữ padding
+                      child: Column(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center, // Căn giữa theo chiều dọc
+                        crossAxisAlignment: CrossAxisAlignment
+                            .start, // Căn trái theo chiều ngang
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.quiz, // Biểu tượng trắc nghiệm
+                                color: Colors.black87, // Đen nhạt
+                                size: 28,
+                              ),
+                              const SizedBox(
+                                  width: 8), // Khoảng cách giữa icon và text
+                              Expanded(
+                                child: Text(
+                                  'Quiz-App 2025',
+                                  style: const TextStyle(
+                                    color: Colors.black87, // Đen nhạt
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                              height: 8), // Khoảng cách giữa các dòng
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.school, // Biểu tượng học tập
+                                color: Colors.black87, // Đen nhạt
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Ứng dụng luyện thi trắc nghiệm',
+                                  style: const TextStyle(
+                                    color: Colors.black87, // Đen nhạt
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.code, // Biểu tượng lập trình
+                                color: Colors.black87, // Đen nhạt
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Công nghệ: Flutter - Micronaut',
+                                  style: const TextStyle(
+                                    color: Colors.black87, // Đen nhạt
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.book, // Biểu tượng sách/tài liệu
+                                color: Colors.black87, // Đen nhạt
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Tiểu luận: 2025 - HKII',
+                                  style: const TextStyle(
+                                    color: Colors.black87, // Đen nhạt
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -200,7 +286,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     height: 300,
                     decoration: BoxDecoration(
-                      color: Colors.green[100]?.withOpacity(0.8),
+                      color: Colors.green[100]
+                          ?.withOpacity(0.8), // Giữ nền xanh lá nhạt
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -210,10 +297,98 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    child: const Center(
-                      child: Text(
-                        'Nội dung khác',
-                        style: TextStyle(color: Colors.white),
+                    child: Padding(
+                      padding: const EdgeInsets.all(
+                          16.0), // Padding để tạo khoảng cách
+                      child: Column(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center, // Căn giữa theo chiều dọc
+                        crossAxisAlignment: CrossAxisAlignment
+                            .start, // Căn trái theo chiều ngang
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.person, // Biểu tượng cho Tên
+                                color: Colors.black87, // Đen nhạt
+                                size: 28,
+                              ),
+                              const SizedBox(
+                                  width: 8), // Khoảng cách giữa icon và text
+                              Expanded(
+                                child: Text(
+                                  'Liên hệ: Trần Quang Vũ',
+                                  style: const TextStyle(
+                                    color: Colors.black87, // Đen nhạt
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                              height: 8), // Khoảng cách giữa các dòng
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.badge, // Biểu tượng cho MSSV
+                                color: Colors.black87, // Đen nhạt
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'MSSV: 21130615',
+                                  style: const TextStyle(
+                                    color: Colors.black87, // Đen nhạt
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.email, // Biểu tượng cho Email
+                                color: Colors.black87, // Đen nhạt
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Email: Vutran08012k3@gmail.com',
+                                  style: const TextStyle(
+                                    color: Colors.black87, // Đen nhạt
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.favorite, // Biểu tượng cho Lời cảm ơn
+                                color: Colors.black87, // Đen nhạt
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Em Xin Cảm ơn',
+                                  style: const TextStyle(
+                                    color: Colors.black87, // Đen nhạt
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -347,109 +522,110 @@ class _NewsCarouselState extends State<NewsCarousel> {
         isLoading
             ? const Center(child: CircularProgressIndicator())
             : errorMessage.isNotEmpty
-            ? Center(
-          child: Text(
-            errorMessage,
-            style: const TextStyle(color: Colors.red),
-          ),
-        )
-            : SizedBox(
-          height: 200,
-          child: newsItems.isEmpty
-              ? const Center(
-            child: Text(
-              'Không có tin tức',
-              style: TextStyle(color: Colors.white),
-            ),
-          )
-              : ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: newsItems.length,
-            itemBuilder: (context, index) {
-              final news = newsItems[index];
-              return GestureDetector(
-                onTap: () => _launchUrl(news['url'] ?? ''),
-                child: Container(
-                  width: 250,
-                  margin: const EdgeInsets.only(right: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12)),
-                        child: news['image'] != null &&
-                            news['image'].isNotEmpty
-                            ? Image.network(
-                          news['image'],
-                          height: 100,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error,
-                              stackTrace) =>
-                              Image.asset(
-                                'assets/images/quiz/title.png',
-                                height: 100,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                        )
-                            : Image.asset(
-                          'assets/images/quiz/title.png',
-                          height: 100,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            // Text(
-                            //   news['title'] ??
-                            //       'Không có tiêu đề',
-                            //   maxLines: 2,
-                            //   overflow: TextOverflow.ellipsis,
-                            //   style: const TextStyle(
-                            //     fontSize: 14,
-                            //     fontWeight: FontWeight.bold,
-                            //   ),
-                            // ),
-                            const SizedBox(height: 4),
-                            Text(
-                              news['description'] ??
-                                  'Không có mô tả',
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
+                ? Center(
+                    child: Text(
+                      errorMessage,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  )
+                : SizedBox(
+                    height: 200,
+                    child: newsItems.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Không có tin tức',
+                              style: TextStyle(color: Colors.white),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
+                          )
+                        : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: newsItems.length,
+                            itemBuilder: (context, index) {
+                              final news = newsItems[index];
+                              return GestureDetector(
+                                onTap: () => _launchUrl(news['url'] ?? ''),
+                                child: Container(
+                                  width: 250,
+                                  margin: const EdgeInsets.only(right: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                                top: Radius.circular(12)),
+                                        child: news['image'] != null &&
+                                                news['image'].isNotEmpty
+                                            ? Image.network(
+                                                news['image'],
+                                                height: 100,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error,
+                                                        stackTrace) =>
+                                                    Image.asset(
+                                                  'assets/images/quiz/title.png',
+                                                  height: 100,
+                                                  width: double.infinity,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              )
+                                            : Image.asset(
+                                                'assets/images/quiz/title.png',
+                                                height: 100,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                              ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // Text(
+                                            //   news['title'] ??
+                                            //       'Không có tiêu đề',
+                                            //   maxLines: 2,
+                                            //   overflow: TextOverflow.ellipsis,
+                                            //   style: const TextStyle(
+                                            //     fontSize: 14,
+                                            //     fontWeight: FontWeight.bold,
+                                            //   ),
+                                            // ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              news['description'] ??
+                                                  'Không có mô tả',
+                                              maxLines: 3,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                   ),
-                ),
-              );
-            },
-          ),
-        ),
       ],
     );
   }

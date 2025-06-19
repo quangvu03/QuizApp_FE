@@ -110,7 +110,7 @@ class _AchievementCarouselState extends State<AchievementCarousel> {
 
     final List<Map<String, dynamic>> achievements = [
       {
-        'title': 'Thành tựu trong tháng (Thử thách)',
+        'title': 'Thành tựu trong tháng',
         'averageLabel': 'Điểm trung bình',
         'averageScore': () {
           final raw = dataAchievement?["avgScore"];

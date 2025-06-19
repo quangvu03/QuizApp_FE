@@ -29,7 +29,7 @@ dependencies:
   flutter_quill: ^9.2.3
   markdown_quill: ^3.0.1
   image_cropper: ^8.0.2
-
+  fl_chart: ^0.66.2 # kiểm tra pub.dev để lấy phiên bản mới nhất
 
 flutter_native_splash:
   color: "#ffffff"
